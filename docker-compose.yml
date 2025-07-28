@@ -27,11 +27,11 @@ services:
 
   pgdb:
     image: postgres
+    container_name: pgdb
     environment:
       - POSTGRES_DB=shop
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=egr12620
-    container_name: pgdb
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - pgdbdata:/var/lib/postgresql/data/
     ports:
@@ -96,16 +96,16 @@ services:
       backend:
 
   elasticsearch:
-    image: elasticsearch:8.7.1 
+    image: elasticsearch:8.7.1
     container_name: elasticsearch
     ports:
       - "9200:9200"
-      - "9300:9300"    
+      - "9300:9300"
     environment:
-      - "discovery.type=single-node"      
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m    
-      - ELASTIC_USER=elastic
-      - ELASTIC_PASS=ixGr39uEgR1JfYG_F8yS
+      - "discovery.type=single-node"
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - ELASTIC_USER=${ELASTIC_USERNAME}
+      - ELASTIC_PASS=${ELASTIC_PASSWORD}
       - "xpack.security.enabled=false"
     networks:
       backend:
