@@ -1,6 +1,7 @@
 from django.contrib.auth.base_user import BaseUserManager
 from django.utils.translation import gettext_lazy as _
 
+
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, first_name, last_name, phone_number, password=None, **extra_fields):
         """Create and save a user with the given email and optional password."""
@@ -13,7 +14,6 @@ class CustomUserManager(BaseUserManager):
             last_name=last_name,
             phone_number=phone_number,
             **extra_fields,
-           
         )
         if not password:
             password = self.make_random_password()
@@ -33,7 +33,7 @@ class CustomUserManager(BaseUserManager):
 
         user = self.model(
             email=email,
-            first_name=first_name,            
+            first_name=first_name,
             phone_number=phone_number,
             **extra_fields,
         )
@@ -45,4 +45,3 @@ class CustomUserManager(BaseUserManager):
 
         user.save(using=self._db)
         return user
-

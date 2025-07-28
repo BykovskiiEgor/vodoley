@@ -1,6 +1,7 @@
-from repositories.order_repository import OrderRepository
 from repositories.items_repository import ItemsRepository
+from repositories.order_repository import OrderRepository
 from services.order_service import OrderService
+
 
 def get_order_service():
     """di."""

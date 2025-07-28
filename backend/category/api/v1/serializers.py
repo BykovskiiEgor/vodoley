@@ -1,14 +1,13 @@
+from category.models import Categories
 from rest_framework import serializers
 
-from category.models import Categories
-        
-        
+
 class CategorySerializer(serializers.ModelSerializer):
     children = serializers.SerializerMethodField()
 
     class Meta:
         model = Categories
-        fields = ('id', 'name', 'children', 'image')
+        fields = ("id", "name", "children", "image")
 
     def get_children(self, obj):
         children = obj.get_children()

@@ -1,30 +1,34 @@
 import os
-import pandas as pd
-from django.core.management.base import BaseCommand
-from items.models import Item, Attribute, ItemAttribute, ItemImage
-from django.core.files import File
-from urllib.request import urlopen
 from tempfile import NamedTemporaryFile
+from urllib.request import urlopen
+
+import pandas as pd
+from django.core.files import File
+from django.core.management.base import BaseCommand
 from django.db.models import Q
+from items.models import Attribute
+from items.models import Item
+from items.models import ItemAttribute
+from items.models import ItemImage
 
 
 class Command(BaseCommand):
-    help = 'Get information from flexi and edit items'
-    
+    help = "Get information from flexi and edit items"
+
     def add_arguments(self, parser):
-        parser.add_argument('file_path', type=str, help='Путь к файлу')
-        
+        parser.add_argument("file_path", type=str, help="Путь к файлу")
+
     def handle(self, **kwargs):
-        updated_count = 0 
-        file_path = kwargs['file_path']
-        Attribute.objects.get(name='Бренд')
-        Attribute.objects.get(name='Страна')
-        
+        updated_count = 0
+        file_path = kwargs["file_path"]
+        Attribute.objects.get(name="Бренд")
+        Attribute.objects.get(name="Страна")
+
         for row in self.read_excel(file_path):
             if all(pd.isna(cell) for cell in row):
                 continue
-            
-            article = str(row[0]).split('.')[0]
+
+            article = str(row[0]).split(".")[0]
             name = row[1]
             brand = row[2]
             country = row[3]
@@ -33,62 +37,50 @@ class Command(BaseCommand):
 
             items = self.get_items(name)
             if len(items) != 1:
-                self.stdout.write(self.style.WARNING(f'Found {len(items)} items with article {name}, skipping...'))
+                self.stdout.write(self.style.WARNING(f"Found {len(items)} items with article {name}, skipping..."))
                 continue
-            
+
             item = items[0]
             item_updated = self.update_item(item, brand, country, description)
             if item_updated:
                 updated_count += 1
             self.process_images(item, img_urls)
-        
-        self.stdout.write(self.style.SUCCESS(f'Successfully updated {updated_count} items from the file.'))
+
+        self.stdout.write(self.style.SUCCESS(f"Successfully updated {updated_count} items from the file."))
 
     def read_excel(self, file_path):
         """Генератор для чтения строк из Excel-файла."""
         df = pd.read_excel(file_path)
-        columns = ['Код','Наименование','Бренд','Страна','Адреса изображений','Описание товара']
+        columns = ["Код", "Наименование", "Бренд", "Страна", "Адреса изображений", "Описание товара"]
         data = df[columns].values
-        for row in data:
-            yield row
-    
+        yield from data
+
     def get_items(self, name):
         """Ищет товары по имени, фильтрует в Python."""
         # Сначала ищем все товары, где артикул содержится в строке
-        potential_items = Item.objects.filter(
-            Q(name__icontains=name)
-        )
+        potential_items = Item.objects.filter(Q(name__icontains=name))
         print(potential_items)
         # Затем фильтруем результаты в Python
         return [item for item in potential_items]
-        
-    
+
     def update_item(self, item, brand, country, description):
         """Обновляет атрибуты и описание товара."""
-        
+
         item_updated = False
-        
-        if pd.notna(description):            
+
+        if pd.notna(description):
             item.description = description
             item.save()
             item_updated = True
 
         if pd.notna(brand):
-            ItemAttribute.objects.update_or_create(
-                item=item,
-                attribute=Attribute.objects.get(name='Бренд'),
-                defaults={'value': brand}                
-            )
+            ItemAttribute.objects.update_or_create(item=item, attribute=Attribute.objects.get(name="Бренд"), defaults={"value": brand})
             item_updated = True
-        
+
         if pd.notna(country):
-            ItemAttribute.objects.update_or_create(
-                item=item,
-                attribute=Attribute.objects.get(name='Страна'),
-                defaults={'value': country}
-            )
+            ItemAttribute.objects.update_or_create(item=item, attribute=Attribute.objects.get(name="Страна"), defaults={"value": country})
             item_updated = True
-            
+
         return item_updated
 
     def process_images(self, item, img_urls):
@@ -96,13 +88,13 @@ class Command(BaseCommand):
         if pd.notna(img_urls):
             # Проверяем, есть ли у товара уже изображения
             if ItemImage.objects.filter(item=item).exists():
-                self.stdout.write(self.style.WARNING(f'Item {item.article} already has images, skipping image updates.'))
+                self.stdout.write(self.style.WARNING(f"Item {item.article} already has images, skipping image updates."))
                 return
-            
-            urls = img_urls.replace('\n', ',').split(',')
+
+            urls = img_urls.replace("\n", ",").split(",")
             for url in urls:
                 self.add_image_to_item(item, url.strip())
-    
+
     def add_image_to_item(self, item, url):
         try:
             img_temp = NamedTemporaryFile(delete=True)
@@ -110,6 +102,6 @@ class Command(BaseCommand):
             img_temp.flush()
             item_image = ItemImage(item=item)
             item_image.image.save(os.path.basename(url), File(img_temp), save=True)
-            self.stdout.write(self.style.SUCCESS(f'Added image from {url} to item {item.article}.'))
+            self.stdout.write(self.style.SUCCESS(f"Added image from {url} to item {item.article}."))
         except Exception as e:
-            self.stdout.write(self.style.WARNING(f'Could not add image from {url} to item {item.article}: {e}'))
+            self.stdout.write(self.style.WARNING(f"Could not add image from {url} to item {item.article}: {e}"))

@@ -1,26 +1,27 @@
-from django.template.loader import render_to_string
-from django.core.mail import EmailMessage
 from django.conf import settings
+from django.core.mail import EmailMessage
+from django.template.loader import render_to_string
+
 
 class MailService:
     """MailService."""
-    
-    def send_order_email(self,user_data, order_data):
-        
+
+    def send_order_email(self, user_data, order_data):
+
         context = {
-            'user': user_data,
-            'order': order_data,
+            "user": user_data,
+            "order": order_data,
         }
-        html_message = render_to_string('order_email_new.html', context)
-        
-        from_email = settings.EMAIL_HOST_USER  
+        html_message = render_to_string("order_email_new.html", context)
+
+        from_email = settings.EMAIL_HOST_USER
         recipient_list = [from_email]
         email = EmailMessage(
-            'Новый заказ',
+            "Новый заказ",
             html_message,
             from_email,
             recipient_list,
         )
-        email.content_subtype = 'html'  
+        email.content_subtype = "html"
 
         email.send()

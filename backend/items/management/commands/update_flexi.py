@@ -1,39 +1,41 @@
-from django.core.management.base import BaseCommand
-from items.models import Item, ItemImage, ItemAttribute, Attribute
-from dataclasses import dataclass
+import asyncio
+import os
 from collections.abc import Generator
+from dataclasses import dataclass
+
+import httpx
+import requests
+from asgiref.sync import sync_to_async
 from defusedxml.ElementTree import fromstring
 from django.core.files.base import ContentFile
-import requests
-import os
-import httpx
-import asyncio
-from asgiref.sync import sync_to_async
-from django.db.models import Exists, OuterRef
+from django.core.management.base import BaseCommand
+from items.models import Attribute
+from items.models import Item
+from items.models import ItemAttribute
+from items.models import ItemImage
 
 
-
-
-flexi_url = os.getenv('FLEXI_URL')
+flexi_url = os.getenv("FLEXI_URL")
 
 
 @dataclass
 class ItemParse:
     """Класс для хранения данных о товаре."""
-    
+
     article: str
-    pictures: list    
+    pictures: list
     description: str | None
     features: str | None
 
+
 class Command(BaseCommand):
     """Команда для обновления товаров из Flexi."""
-    
-    help = 'Update all items from flexi'
+
+    help = "Update all items from flexi"
 
     async def download_image(self, url: str, product):
         """Загрузка изображения."""
-        if not url.startswith(('http', 'https')):
+        if not url.startswith(("http", "https")):
             self.stdout.write(self.style.ERROR("URL must start with 'http:' or 'https:'"))
             return
         try:
@@ -52,18 +54,17 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.ERROR(f"Error downloading image from {url}. HTTP Status: {response.status_code}"))
         except httpx.RequestError as ex:
             self.stdout.write(self.style.ERROR(f"Error downloading image from {url}: {ex}"))
-            
+
     def process_features(self, features: str):
         parsed_features = {}
         if features:
-            for feature in features.split(';'):
-                if ':' in feature:
-                    key, value = feature.split(':', 1)
+            for feature in features.split(";"):
+                if ":" in feature:
+                    key, value = feature.split(":", 1)
                     parsed_features[key.strip()] = value.strip()
-       
+
         return parsed_features
-                        
-            
+
     async def save_attributes(self, product, **attributes):
         """Сохраняет атрибуты товара, создавая или обновляя существующие."""
         try:
@@ -71,11 +72,11 @@ class Command(BaseCommand):
 
             for attr_name, attr_data in attributes.items():
                 if not attr_data:
-                    continue  
+                    continue
 
                 attr_label, attr_value = attr_data
                 if attr_value is None:
-                    continue  
+                    continue
 
                 self.stdout.write(self.style.NOTICE(f"Saving attribute: {attr_label} -> {attr_value}"))
 
@@ -101,14 +102,13 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR(f"Failed to save attributes: {str(ex)}"))
             raise
 
-
     async def add_description(self, article, description):
         try:
             self.stdout.write(self.style.WARNING(f"Артикул - {article} Описание - {description}"))
             if description is None:
                 return
             await sync_to_async(
-                lambda: Item.objects.filter(article=article).update(description=description), 
+                lambda: Item.objects.filter(article=article).update(description=description),
                 thread_sensitive=True,
             )()
 
@@ -123,23 +123,23 @@ class Command(BaseCommand):
             offers = root.findall(".//offer")
 
             for offer in offers:
-                article = offer.get('id')                
-                description = offer.findtext('description') or None
-                features = offer.findtext('features') or None
+                article = offer.get("id")
+                description = offer.findtext("description") or None
+                features = offer.findtext("features") or None
                 pictures = [pic.text for pic in offer.findall("picture")]
                 parsed_features = self.process_features(features)
                 if article and pictures:
                     yield ItemParse(
                         article,
-                        pictures,                        
+                        pictures,
                         description,
                         parsed_features,
                     )
-                    
+
         except Exception as e:
             self.stdout.write(self.style.ERROR(f"Error parsing XML: {e}"))
 
-    def download_data(self) -> str| None:
+    def download_data(self) -> str | None:
         """Загрузка данных с Flexi."""
         if not flexi_url:
             self.stdout.write(self.style.ERROR("FLEXI_URL is not defined."))
@@ -158,74 +158,72 @@ class Command(BaseCommand):
         """Асинхронная обработка данных."""
         parsed_items = {item.article: item for item in self.process_file(data)}
         tasks = []
-        semaphore = asyncio.Semaphore(10)  
+        semaphore = asyncio.Semaphore(10)
 
         async def limited_download(url, product):
             async with semaphore:
                 await self.download_image(url, product)
 
         async with httpx.AsyncClient(http2=True):
-            for article in items_articles:    
+            for article in items_articles:
                 item = None
                 if article.article in parsed_items:
                     item = parsed_items[article.article]
-                else:                        
-                    article_parts = set(article.article.split('/'))
-                                    
+                else:
+                    article_parts = set(article.article.split("/"))
+
                     matched_key = next(
-                        (key for key in parsed_items if set(key.split('/')) & article_parts),
+                        (key for key in parsed_items if set(key.split("/")) & article_parts),
                         None,
                     )
-                    
-                    if matched_key:                    
+
+                    if matched_key:
                         item = parsed_items[matched_key]
-                        
-                if item:   
+
+                if item:
                     await self.add_description(
                         article.article,
                         item.description,
-                    )                 
+                    )
                     await self.save_attributes(
-                        product=article,                        
+                        product=article,
                         **{key: (key, value) for key, value in (item.features or {}).items()},
-                    )  
-                                                                                   
+                    )
+
                     has_images = await sync_to_async(article.images.exists, thread_sensitive=True)()
                     if has_images:
                         self.stdout.write(self.style.WARNING(f"Product {article.article} already has images, skipping download."))
                         continue
 
                     for url in item.pictures:
-                        tasks.append(asyncio.create_task(limited_download(
-                            url,
-                            article,
-                        )))
-                    
+                        tasks.append(
+                            asyncio.create_task(
+                                limited_download(
+                                    url,
+                                    article,
+                                )
+                            )
+                        )
+
             results = await asyncio.gather(*tasks, return_exceptions=True)
             for idx, result in enumerate(results):
                 if isinstance(result, Exception):
                     self.stderr.write(f"Task {idx} failed with error: {result}")
 
-
-
     def handle(self, *args: tuple, **options: dict):
         """Основной метод для выполнения команды."""
         data = self.download_data()
         if not data:
-            return        
-        
+            return
+
         # items_articles = list(Item.objects.annotate(
         #     has_image=Exists(
         #         ItemImage.objects.filter(item_id=OuterRef('id')),
         #     ),
         # ).filter(has_image=False))
-        
-        items_articles = list(Item.objects.all())
-                
 
-        self.stdout.write(self.style.SUCCESS({len(items_articles)}))       
+        items_articles = list(Item.objects.all())
+
+        self.stdout.write(self.style.SUCCESS({len(items_articles)}))
 
         asyncio.run(self.handle_async(data, items_articles))
-
-
-    
