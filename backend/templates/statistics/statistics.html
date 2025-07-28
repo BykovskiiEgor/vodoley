@@ -1,0 +1,191 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Статистика</title>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <link rel="stylesheet" href="{% static 'admin/css/base.css' %}">
+        <link rel="stylesheet" href="{% static 'admin/css/dashboard.css' %}">
+        <link rel="stylesheet" href="{% static '/css/statistic.css' %}">
+    </head>
+    <body class="dashboard">
+        <!-- Header как в админке -->
+        <div id="header">
+            <div id="branding">
+                <h1 id="site-name">
+                    <a>Статистика продаж</a>
+                </h1>
+            </div>
+            {% if user.is_authenticated %}
+                <div id="user-tools">
+                    Добро пожаловать,
+                    <strong>{% firstof user.get_short_name user.get_username %}</strong>.
+                    {% if user.is_staff %}<a href="/vodad!2112/">Админ-панель</a> /{% endif %}
+                    {% if user.has_usable_password %}
+                        <a href="{% url 'admin:password_change' %}">Изменить пароль</a> /
+                    {% endif %}
+                    <form id="logout-form"
+                          method="post"
+                          action="{% url 'admin:logout' %}"
+                          style="display: inline">
+                        {% csrf_token %}
+                        <button type="submit"
+                                style="background: none;
+                                       border: none;
+                                       color: #fff;
+                                       cursor: pointer;
+                                       padding: 0;
+                                       font: inherit">Выйти</button>
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+        <!-- Конец header'а -->
+        <div class="conatiner">
+            <div class="blocks-container">
+                <div class="block">
+                    <div class="block-inner">
+                        Общий объем продаж (руб.)
+                        <p>{{ total_sales }}</p>
+                    </div>
+                    <span class="line"></span>
+                    <div class="block-inner">
+                        Продажи сегодня (руб.)
+                        <p>{{ sales_today }}</p>
+                    </div>
+                </div>
+                <div class="block">
+                    <div class="block-inner">
+                        Кол-во новых заказов (шт.)
+                        <p>{{ new_orders }}</p>
+                    </div>
+                    <span class="line"></span>
+                    <div class="block-inner">
+                        Кол-во завершенных заказов (шт.)
+                        <p>{{ close_orders }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="form-container">
+                <form method="get" class="formm">
+                    <div class="form-group date-range">
+                        <label>Показать продажи по датам:</label>
+                        <div class="date-fields">
+                            <div class="date-field">
+                                <span>с</span>
+                                {{ form.date_start }}
+                            </div>
+                            <div class="date-field">
+                                <span>по</span>
+                                {{ form.date_end }}
+                            </div>
+                        </div>
+                        <button type="submit" class="button-show">Показать</button>
+                    </div>
+                </form>
+            </div>
+            {% if show_chart %}
+                <span class="chart-name">График продаж</span>
+                <div class="report-container">
+                    <div class="chart-container">
+                        <canvas id="salesChart"></canvas>
+                    </div>
+                    <span style="margin-bottom: auto">
+                        <div class="block">
+                            <div class="block-inner">
+                                Общий объем продаж за выбранный период (руб.)
+                                <p>{{ chart_data.total_sum }}</p>
+                            </div>
+                        </div>
+                        <div class="block" style="margin-top: 20px">
+                            <div class="block-inner">
+                                <p style="margin-bottom:12px; font-size: 28px">Популярные товары</p>
+                                <span class="info-text">Ниже приведен рейтинг популярности самых покупаемых товаров за выбранный период</span>
+                                <div class="items-conatiner">
+                                    {% for item in items %}
+                                        <div class="product">
+                                            <div class="label">
+                                                <div>{{ item.item__name }}</div>
+                                                <div>{{ item.total_quantity }}</div>
+                                            </div>
+                                            <div class="bar">
+                                                <div class="fill" style="width: {{ item.width_percent }}%"></div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </span>
+                </div>
+            {% endif %}
+        </div>
+    </body>
+</html>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('salesChart').getContext('2d');
+    
+    let xAxisTitle = 'Дни';
+    if ('{{ chart_data.time_unit }}' === 'hour') {
+        xAxisTitle = 'Часы';
+    } else if ('{{ chart_data.time_unit }}' === 'month') {
+        xAxisTitle = 'Месяцы';
+    }
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: {{ chart_data.labels|safe }},
+            datasets: [{
+                label: 'Сумма продаж',
+                data: {{ chart_data.values|safe }},
+                backgroundColor: '#003464',
+                borderColor: '#003464',
+                borderWidth: 1,
+                borderRadius: 4,
+                barThickness: 40
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.parsed.y.toLocaleString('ru-RU') + ' ₽';
+                        }
+                    }
+                },
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: false,
+                        text: 'Сумма (₽)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString('ru-RU');
+                        }
+                    }
+                },
+                x: {                    
+                    title: {
+                        display: true,
+                        text: xAxisTitle
+                    },
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+});
+</script>

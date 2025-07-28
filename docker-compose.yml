@@ -1,0 +1,122 @@
+version: '3'
+
+services:
+  django:
+    build: ./backend
+    container_name: django
+    command: gunicorn --workers 3 --timeout 120 --bind 0.0.0.0:8000 shop.wsgi:application
+    volumes:
+      - ./backend:/app/backend
+      - /etc/timezone:/etc/timezone:ro  
+      - /etc/localtime:/etc/localtime:ro 
+      - ./static:/app/backend/main/static
+      - ./backend/media:/app/backend/media
+      - ./backend/media:/usr/share/nginx/media
+    ports:
+      - 8000:8000
+    depends_on:
+      - pgdb
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - DJANGO_SETTINGS_MODULE=shop.settings
+      - TZ=Europe/Moscow
+    networks:
+      backend:
+      src_backend_public:
+
+  pgdb:
+    image: postgres
+    environment:
+      - POSTGRES_DB=shop
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=egr12620
+    container_name: pgdb
+    volumes:
+      - pgdbdata:/var/lib/postgresql/data/
+    ports:
+      - "5434:5432"
+    networks:
+      backend:
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: frontend
+    volumes:
+      - frontend_dist:/output
+    command: ["sh", "-c", "npm run build && cp -r dist /output"]
+
+  nginx:
+    build:
+      context: ./nginx
+    container_name: nginx
+    depends_on:
+      - frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - frontend_dist:/usr/share/nginx/html
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./backend/main/static:/usr/share/nginx/html/static
+      - ./backend/media:/usr/share/nginx/media
+
+    networks:
+      - backend
+
+  celery:
+    build: ./backend
+    container_name: celery
+    command: sh -c "pip install -r requirements.txt && celery -A shop worker --loglevel=info"
+    volumes:
+      - ./backend:/app/backend
+    depends_on:
+      - django
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - DJANGO_SETTINGS_MODULE=shop.settings
+    networks:
+      backend:
+
+  celery-beat:
+    build: ./backend
+    container_name: celery-beat
+    command: sh -c "pip install -r requirements.txt && celery -A shop beat --loglevel=info"
+    volumes:
+      - ./backend:/app/backend
+    depends_on:
+      - django
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - DJANGO_SETTINGS_MODULE=shop.settings
+    networks:
+      backend:
+
+  elasticsearch:
+    image: elasticsearch:8.7.1 
+    container_name: elasticsearch
+    ports:
+      - "9200:9200"
+      - "9300:9300"    
+    environment:
+      - "discovery.type=single-node"      
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m    
+      - ELASTIC_USER=elastic
+      - ELASTIC_PASS=ixGr39uEgR1JfYG_F8yS
+      - "xpack.security.enabled=false"
+    networks:
+      backend:
+
+volumes:
+  pgdbdata:
+  redisdata:
+  frontend_dist:
+
+networks:
+  backend:
+    driver: bridge
+  src_backend_public:  
+    external: true

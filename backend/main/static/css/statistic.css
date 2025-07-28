@@ -1,0 +1,158 @@
+.conatiner{
+    width: 95%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-top: 20px;
+}
+
+.blocks-container{
+    display: flex;
+    width: 100%;    
+    justify-content: space-between;
+    gap: 30px;    
+    flex-wrap: wrap;
+   
+}
+
+.block{
+    flex: 1;  
+    background-color: #F8FAFC;
+    color: #0F172A;
+    padding: 32px 32px;
+    display: flex;
+    align-items: start;
+    text-align: center;   
+    max-height: 120px;
+    font-size: 16px;
+    text-align: start;
+}
+
+.block p {
+    font-size: 36px;
+    font-weight: bold;
+}
+
+.block-inner{
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: center;
+    text-align: start;
+}
+
+.line{
+    border-left: 1px solid #D9D9D9;
+    height: 60%;
+    margin-left: 24px;
+    margin-right: 24px;
+    margin-top: 5px;
+}
+
+.form-container{
+    width: 100%;
+    margin: 15px 0;
+}
+
+.formm{
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.date-range {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    font-size: 20px;
+}
+
+.date-fields {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: 10px;
+}
+
+.date-field {
+    display: flex;
+    align-items: center;
+}
+
+.date-field span {
+    margin-right: 5px;
+    font-weight: normal;
+}
+
+.input-custom{
+    padding: 8px 8px;
+    font-size: 18px;
+    border-radius: 4px;
+    border-style: solid;
+}
+
+.button-show{
+    padding: 16px 28px;
+    background-color: #003464;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: auto;
+}
+
+.chart-name{
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.chart-container{
+   
+   height: 400px;
+}
+
+.report-container{
+    display: grid;
+    grid-template-columns: 2fr 1.5fr;
+    align-items: center;
+    width: 100%;
+    gap: 40px;
+    margin-top: 20px;
+}
+
+.items-conatiner{
+    display: flex;
+    flex-direction: column;
+}
+
+.product {
+  margin-bottom: 18px;
+}
+
+.label {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.bar {
+  background-color: #e0e0e0;
+  border-radius: 8px;
+  height: 10px;
+  overflow: hidden;
+}
+
+.fill {
+  background-color: #030f12;
+  height: 100%;
+  border-radius: 8px;
+  transition: width 0.3s ease;
+}
+
+.info-text{
+    font-size: 16px;
+    width: 90%;
+    text-align: start;
+    margin-bottom: 32px;
+}

@@ -1,0 +1,103 @@
+version: '3'
+
+services:
+  django:
+    build: ./backend
+    container_name: django
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend:/app/backend
+    ports:
+      - 8000:8000
+    depends_on:
+      - pgdb
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - DJANGO_SETTINGS_MODULE=shop.settings
+    networks:
+      - backend
+      - src_backend_public
+
+  pgdb:
+    image: postgres:16
+    environment:
+      - POSTGRES_DB=db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=egr12620
+    container_name: pgdb
+    volumes:
+      - pgdbdata:/var/lib/postgresql/data/
+    ports:
+      - "5434:5432"
+    networks:
+      - backend
+
+   
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    networks:
+      - backend
+
+  celery:
+    build: ./backend
+    container_name: celery
+    command: sh -c "pip install -r requirements.txt && celery -A shop worker --loglevel=info"
+    volumes:
+      - ./backend:/app/backend
+    depends_on:
+      - django
+      - redis
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - DJANGO_SETTINGS_MODULE=shop.settings
+    networks:
+      - backend
+
+  celery-beat:
+    build: ./backend
+    container_name: celery-beat
+    command: sh -c "pip install -r requirements.txt && celery -A shop beat --loglevel=info"
+    volumes:
+      - ./backend:/app/backend
+    depends_on:
+      - django
+      - redis
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - DJANGO_SETTINGS_MODULE=shop.settings
+    networks:
+      - backend
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.6.1
+    container_name: elasticsearch
+    ports:
+      - "9200:9200"
+      - "9300:9300"    
+    environment:
+      - "discovery.type=single-node"      
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m    
+      - ELASTIC_USER=elastic
+      - ELASTIC_PASS=ixGr39uEgR1JfYG_F8yS
+      - "xpack.security.enabled=false"
+    networks:
+      - backend
+
+
+volumes:
+  pgdbdata:
+  redisdata:
+  
+networks:
+  backend:
+    driver: bridge
+  src_backend_public:  
+    external: true

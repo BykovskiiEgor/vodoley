@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ru">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="Новый заказ в вашем магазине">
+        <meta name="keywords" content="заказ, магазин, фильтр, аквабрайт">
+        <title>Новый заказ</title>
+        <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f1f1f1;
+            color: #333;
+        }
+        .container {
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 5px;
+            background-color: #ffffff;
+            max-width: 800px;
+            margin: auto;
+        }
+        .header {
+            background-color: #003464;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .columns {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .column {
+            flex: 1;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            background-color: #f9f9f9;
+        }
+        .column-header {
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #003464;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        .user-info p, .order-info p {
+            margin: 8px 0;
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 0.9em;
+            color: #777;
+            text-align: center;
+        }
+        .product-details {
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #fff;
+            margin-top: 10px;
+        }
+        .product-details p {
+            margin: 5px 0;
+        }
+        .order-items {
+            margin-top: 15px;
+        }
+        .order-item {
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed #ddd;
+        }
+        .order-item:last-child {
+            border-bottom: none;
+        }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">Информация о заказе</div>
+            <div class="content">
+                <div class="columns">
+                    <div class="column">
+                        <div class="column-header">Данные пользователя</div>
+                        <div class="user-info">
+                            <p>
+                                <strong>Имя:</strong> {{ user.first_name }}
+                            </p>
+                            <p>
+                                <strong>Email:</strong> {{ user.email }}
+                            </p>
+                            <p>
+                                <strong>Телефон:</strong> {{ user.phone_number }}
+                            </p>
+                            <p>
+                                <strong>Адрес:</strong>
+                                {{ order.city }}
+                                {{ order.street }}
+                                {{ order.house }}
+                                {{ order.flat }}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="column-header">Информация о заказе</div>
+                        <div class="order-info">
+                            <p>
+                                <strong>Общая сумма:</strong> {{ order.total_price }} руб.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="order-items">
+                    <div class="column-header">Состав заказа</div>
+                    {% for product_id, product in order.products.items %}
+                        <div class="product-details order-item">
+                            <p>
+                                <strong>Товар:</strong> {{ product.name }}
+                            </p>
+                            <p>
+                                <strong>Артикул:</strong> {{ product.id }}
+                            </p>
+                            <p>
+                                <strong>Количество:</strong> {{ product.quantity }}
+                            </p>
+                            <p>
+                                <strong>Цена за единицу:</strong> {{ product.price }} руб.
+                            </p>
+                            <p>
+                                <strong>Сумма:</strong> {{ product.price|floatformat:2 }} руб.
+                            </p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="footer">Это автоматическое сообщение. Пожалуйста, не отвечайте на него.</div>
+        </div>
+    </body>
+</html>

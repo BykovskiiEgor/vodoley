@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ru">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="Новый заказ в вашем магазине">
+        <meta name="keywords" content="заказ, магазин, фильтр, аквабрайт">
+        <title>Новый заказ</title>
+        <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f1f1f1;
+            color: #333;
+        }
+        .container {
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 5px;
+            background-color: #ffffff;
+            max-width: 600px;
+            margin: auto;
+        }
+        .header {
+            background-color: #003464;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+            font-size: 24px;
+        }
+        .content {
+            margin-top: 10px;
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 0.9em;
+            color: #777;
+            text-align: center;
+        }
+        .product-details {
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            margin-top: 10px;
+        }
+        .product-details p {
+            margin: 5px 0;
+        }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">Новый заказ</div>
+            <div class="content">
+                <p>
+                    <strong>Телефон:</strong> {{ phone }}
+                </p>
+                <p>
+                    <strong>Комментарий:</strong> {{ comment }}
+                </p>
+                <p>
+                    <strong>Количество:</strong> {{ quantity }}
+                </p>
+                <div class="product-details">
+                    <p>
+                        <strong>Продукт:</strong>
+                    </p>
+                    <p>
+                        <strong>ID:</strong> {{ product.id }}
+                    </p>
+                    <p>
+                        <strong>Название:</strong> {{ product.name }}
+                    </p>
+                    <p>
+                        <strong>Цена:</strong> {{ product.price }}
+                    </p>
+                </div>
+            </div>
+            <div class="footer">Это автоматическое сообщение. Пожалуйста, не отвечайте на него.</div>
+        </div>
+    </body>
+</html>
