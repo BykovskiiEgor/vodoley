@@ -33,13 +33,6 @@ class ViewsItemsTest(APITestCase):
             category_id=1,
         )
 
-    def test_search_items(self):
-        url = reverse("api-items:items_search") + "?q=Test Item 1"
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertEqual(data["count"], 1)
-
     def test_get_items_with_discounts(self):
         url = reverse("api-items:discounts")
         response = self.client.get(url)

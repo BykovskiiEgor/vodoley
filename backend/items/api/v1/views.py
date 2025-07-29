@@ -63,7 +63,10 @@ class CurrentItemView(generics.RetrieveAPIView):
             raise NotFound("ID parameter is required")
         user = self.request.user if self.request.user.is_authenticated else None
         try:
-            return items_service.get_current_item(item_id, user)
+            item = items_service.get_current_item(item_id, user)
+            if item is None:
+                raise NotFound("Item not found")
+            return item
         except Item.DoesNotExist:
             raise NotFound("Item not found")
 
