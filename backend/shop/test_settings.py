@@ -40,18 +40,6 @@ INSTALLED_APPS = [
     "drf_spectacular",
 ]
 
-ELASTICSEARCH_DSL = {
-    "default": {
-        "hosts": "http://elasticsearch:9200",
-        "basic_auth": (
-            os.getenv("ELASTIC_USERNAME"),
-            os.getenv("ELASTIC_PASSWORD"),
-        ),
-        "verify_certs": False,
-        "ca_certs": None,
-    },
-}
-
 
 # JWT настройки
 SIMPLE_JWT = {
