@@ -39,6 +39,8 @@ jobs:
       DB_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
       DB_HOST: localhost
       DB_PORT: 5432
+      ELASTIC_PASSWORD: ${{ secrets.ELASTIC_PASSWORD }}
+      ELASTIC_USERNAME: ${{ secrets.ELASTIC_USERNAME }}
 
     steps:
       - name: Checkout repository
