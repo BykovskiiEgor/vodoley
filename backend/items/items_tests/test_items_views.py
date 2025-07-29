@@ -8,7 +8,7 @@ from unittest.mock import patch, MagicMock
 
 class ViewsItemsTest(APITestCase):
     def setUp(self):
-        patcher = patch("items.documents.ItemDocument.search")
+        patcher = patch("services.items_service.ItemDocument.search")
         self.mock_search = patcher.start()
         self.addCleanup(patcher.stop)
 
@@ -50,7 +50,7 @@ class ViewsItemsTest(APITestCase):
 
 class CurrentItemViewTest(APITestCase):
     def setUp(self):
-        patcher = patch("items.documents.ItemDocument.search")
+        patcher = patch("services.items_service.ItemDocument.search")
         self.mock_search = patcher.start()
         self.addCleanup(patcher.stop)
 
@@ -99,7 +99,7 @@ class UpdateProductsTest(APITestCase):
 
 class RecommendItemsViewTest(APITestCase):
     def setUp(self):
-        patcher = patch("items.documents.ItemDocument.search")
+        patcher = patch("services.items_service.ItemDocument.search")
         self.mock_search = patcher.start()
         self.addCleanup(patcher.stop)
 
@@ -132,7 +132,7 @@ class RecommendItemsViewTest(APITestCase):
 
 class OrderItemTest(APITestCase):
     def setUp(self):
-        patcher = patch("items.documents.ItemDocument.search")
+        patcher = patch("services.items_service.ItemDocument.search")
         self.mock_search = patcher.start()
         self.addCleanup(patcher.stop)
 
