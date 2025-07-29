@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
 ]
 
+ELASTICSEARCH_DSL = {}
 
 # JWT настройки
 SIMPLE_JWT = {
