@@ -43,7 +43,7 @@ INSTALLED_APPS = [
 ELASTICSEARCH_DSL = {
     "default": {
         "hosts": "http://elasticsearch:9200",
-        "http_auth": (
+        "basic_auth": (
             os.getenv("ELASTIC_USERNAME"),
             os.getenv("ELASTIC_PASSWORD"),
         ),
