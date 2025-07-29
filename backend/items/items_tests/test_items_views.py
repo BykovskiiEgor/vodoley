@@ -1,14 +1,21 @@
 from category.models import Categories
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
-from items.models import Item
-from items.models import RecommendItem
-from rest_framework.test import APIClient
-from rest_framework.test import APITestCase
+from items.models import Item, RecommendItem
+from rest_framework.test import APIClient, APITestCase
+from unittest.mock import patch, MagicMock
 
 
 class ViewsItemsTest(APITestCase):
     def setUp(self):
+        patcher = patch("items.documents.ItemDocument.search")
+        self.mock_search = patcher.start()
+        self.addCleanup(patcher.stop)
+
+        mock = MagicMock()
+        mock.to_queryset.return_value = []
+        self.mock_search.return_value = mock
+
         Categories.objects.create(id=1, name="Test")
         Item.objects.create(
             name="Test Item 1",
@@ -43,6 +50,14 @@ class ViewsItemsTest(APITestCase):
 
 class CurrentItemViewTest(APITestCase):
     def setUp(self):
+        patcher = patch("items.documents.ItemDocument.search")
+        self.mock_search = patcher.start()
+        self.addCleanup(patcher.stop)
+
+        mock = MagicMock()
+        mock.to_queryset.return_value = []
+        self.mock_search.return_value = mock
+
         Categories.objects.create(id=1, name="Test")
         self.item = Item.objects.create(
             name="Test1",
@@ -84,6 +99,14 @@ class UpdateProductsTest(APITestCase):
 
 class RecommendItemsViewTest(APITestCase):
     def setUp(self):
+        patcher = patch("items.documents.ItemDocument.search")
+        self.mock_search = patcher.start()
+        self.addCleanup(patcher.stop)
+
+        mock = MagicMock()
+        mock.to_queryset.return_value = []
+        self.mock_search.return_value = mock
+
         Categories.objects.create(id=1, name="Test")
         Item.objects.create(
             id=1,
@@ -108,6 +131,15 @@ class RecommendItemsViewTest(APITestCase):
 
 
 class OrderItemTest(APITestCase):
+    def setUp(self):
+        patcher = patch("items.documents.ItemDocument.search")
+        self.mock_search = patcher.start()
+        self.addCleanup(patcher.stop)
+
+        mock = MagicMock()
+        mock.to_queryset.return_value = []
+        self.mock_search.return_value = mock
+
     def test_post_order_item(self):
         data = {"phone": "1234567890", "comment": "Test order", "quantity": 1, "product": "Product 1"}
         response = self.client.post(reverse("api-items:preorder"), data, format="json")
