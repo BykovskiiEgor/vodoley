@@ -71,19 +71,6 @@ class CurrentItemView(generics.RetrieveAPIView):
             raise NotFound("Item not found")
 
 
-# class GetByCategory(generics.ListAPIView):
-#     serializer_class = ItemSerializer
-#     pagination_class = CustomPageNumberPagination
-
-#     permission_classes = [AllowAny]
-#     def get_queryset(self):
-#         category_id = self.kwargs.get('category_id')
-#         query = self.request.query_params
-#         if category_id:
-#             return items_service.get_by_category(category_id, query)
-#         return Item.objects.none()
-
-
 class GetByCategory(generics.ListAPIView):
     serializer_class = ItemSerializer
     pagination_class = CustomPageNumberPagination
