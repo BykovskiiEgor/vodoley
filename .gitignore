@@ -154,12 +154,6 @@ cython_debug/
 
 *.xls
 
-*.jpg
-*.jpeg
-
-# Игнорировать все PNG файлы
-*.png
-
 
 ruff.toml
 
