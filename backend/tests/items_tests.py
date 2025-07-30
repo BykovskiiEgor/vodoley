@@ -108,7 +108,7 @@ class RecommendItemsViewTest(APITestCase):
 
 class OrderItemTest(APITestCase):
     def test_post_order_item(self):
-        data = {"phone": "1234567890", "comment": "Test order", "quantity": 1, "product": "Product 1"}
+        data = {"phone": "1234567899", "comment": "Test order", "quantity": 1, "product": "Product 1"}
         response = self.client.post(reverse("api-items:preorder"), data, format="json")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["message"], "Order submitted successfully")
