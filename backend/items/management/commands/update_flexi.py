@@ -1,18 +1,14 @@
-import asyncio
-import os
-from collections.abc import Generator
+from django.core.management.base import BaseCommand
+from items.models import Item, ItemImage, ItemAttribute, Attribute
 from dataclasses import dataclass
-
-import httpx
-import requests
-from asgiref.sync import sync_to_async
+from collections.abc import Generator
 from defusedxml.ElementTree import fromstring
 from django.core.files.base import ContentFile
-from django.core.management.base import BaseCommand
-from items.models import Attribute
-from items.models import Item
-from items.models import ItemAttribute
-from items.models import ItemImage
+import requests
+import os
+import httpx
+import asyncio
+from asgiref.sync import sync_to_async
 
 
 flexi_url = os.getenv("FLEXI_URL")
@@ -224,6 +220,6 @@ class Command(BaseCommand):
 
         items_articles = list(Item.objects.all())
 
-        self.stdout.write(self.style.SUCCESS({len(items_articles)}))
+        self.stdout.write(self.style.SUCCESS(f"Processing {len(items_articles)} items"))
 
         asyncio.run(self.handle_async(data, items_articles))
