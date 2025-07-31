@@ -36,7 +36,10 @@ const router = createRouter({
       path: '/current-items/:id',
       name: 'ProductDetails',
       component: ProductDetailsView,
-      props: true 
+      props: true,
+      meta: {
+        breadcrumb: 'Товар',
+      }, 
     },
     {
       path: '/cart',
@@ -60,7 +63,10 @@ const router = createRouter({
       path: '/products/:categoryID',
       name: 'products',
       component: ProductsView,
-      props: true,      
+      props: true,
+      meta: {
+        breadcrumb: 'Категории',
+      },      
     },
     {
       path: '/categories',

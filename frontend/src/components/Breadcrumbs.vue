@@ -1,47 +1,53 @@
 <template>
-  <nav v-if="breadcrumbs.length" class="breadcrumb">
-    <ul>
-      <li v-for="(bc, index) in breadcrumbs" :key="index">
-        <router-link v-if="index < breadcrumbs.length - 1" :to="bc.path">
-          {{ bc.label }}
-        </router-link>
-        <span v-else>{{ bc.label }}</span>
+  <nav class="breadcrumbs">
+    <ul class="crumbs">
+      <li v-for="(crumb, index) in breadcrumbs" :key="index" class="flex items-center">
+        <router-link
+          :to="`/products/${crumb[1]}`"
+          class="cr"
+        >
+          {{ crumb[0] }}
+        </router-link>        
+        <span v-if="index !== breadcrumbs.length - 1" class="mx-1">/</span>
       </li>
     </ul>
   </nav>
 </template>
+<script lang="ts">
+import { defineComponent } from 'vue'
 
-<script lang="ts" setup>
-import { computed } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-
-interface Breadcrumb {
-  label: string;
-  path: string;
-}
-
-const route = useRoute();
-const router = useRouter();
-
-const breadcrumbs = computed<Breadcrumb[]>(() => {
-  const matched = route.matched.filter(r => r.meta?.breadcrumb);
-  return matched.map(r => ({
-    label: r.meta.breadcrumb as string,
-    path: r.path,
-  }));
-});
+export default defineComponent({
+  name: 'ProductBreadcrumbs',
+  props: {
+    product: {
+      type: Object as () => { breadcrumbs: [string, number][] },
+      required: true,
+    },
+  },
+  computed: {
+    breadcrumbs() {
+      return this.product.breadcrumbs
+    },
+  },
+})
 </script>
 
 <style scoped>
-.breadcrumb ul {
+.breadcrumbs{
+  display: flex;  
+}
+
+.crumbs{
   display: flex;
-  gap: 0.5rem;
+  list-style: none;
+  padding-left: 0;
 }
-.breadcrumb li::after {
-  content: '>';
-  margin: 0 0.5rem;
+
+.cr{
+  color: black
 }
-.breadcrumb li:last-child::after {
-  content: '';
+
+.cr:hover{
+  color: #003464;
 }
 </style>

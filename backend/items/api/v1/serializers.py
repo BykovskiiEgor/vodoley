@@ -36,6 +36,7 @@ class ItemSerializer(serializers.ModelSerializer):
     images = ItemImageSerializer(many=True, read_only=True)
     avg_rating = serializers.DecimalField(max_digits=5, decimal_places=2, read_only=True)
     user_rating = serializers.IntegerField(read_only=True, allow_null=True)
+    breadcrumbs = serializers.SerializerMethodField()
 
     class Meta:
         model = Item
@@ -56,7 +57,14 @@ class ItemSerializer(serializers.ModelSerializer):
             "avg_rating",
             "user_rating",
             "quantity",
+            "breadcrumbs",
         ]
+
+    def get_breadcrumbs(self, obj):
+        ancestors = getattr(obj, "_breadcrumbs", None)
+        if not ancestors:
+            return []
+        return [[c.name, c.id] for c in ancestors]
 
 
 class ItemListWithAttributesSerializer(serializers.Serializer):

@@ -18,6 +18,7 @@ interface Product {
   avg_rating?: string;
   user_rating?: number;
   quantity: number;
+  breadcrumbs: [string, number][];
 }
 
 interface CartItem {

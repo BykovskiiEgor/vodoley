@@ -48,13 +48,20 @@ class ItemsService:
         search = search[:100]
         return search.to_queryset()
 
-    def get_current_item(self, item_id: int, user: object) -> Item | None:
-        """Retrieve the current item by its ID."""
+    def get_current_item(self, item_id: int, user: object) -> tuple[Item | None, list[dict]]:
+        """Retrieve the current item by its ID along with category breadcrumbs."""
         try:
-            return self.items_repository.get_product_by_id(item_id, user)
+            item = self.items_repository.get_product_by_id(item_id, user)
+
+            if not item or not item.category:
+                return item
+
+            item._breadcrumbs = item.category.get_ancestors(include_self=True)
+            return item
 
         except Exception as e:
-            logger.error(f"Error{e}")
+            logger.error(f"Error while getting item with breadcrumbs: {e}")
+            return None
 
     def get_by_category(self, category_id: int, query_params: dict[str, Any]) -> tuple[QuerySet[Item], dict[str, Any]] | None:
         """Retrieve items by category and apply additional filters."""

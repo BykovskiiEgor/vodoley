@@ -1,8 +1,9 @@
 <template>  
     <header>
       <Navbar />
-    </header>                 
+    </header>                    
       <div class="container" v-for="product in products" :key="product.id">
+        <Breadcrumbs :product="product"/>         
         <div class="product-card">
           <div class="product-card-images">
             <div class="thumbnails">   
@@ -65,7 +66,7 @@
                 {{ isCopied ? 'Скопировано!' : 'Копировать' }}
               </button>
             </div>
-            <div class="item-name">{{ product.name }}</div>
+            <div class="item-name">{{ product.name }}</div>            
             <span class="star-rating" v-if="parseFloat(product.avg_rating ?? '0') > 0">                
               <star-rating :rating="parseFloat(product.avg_rating ?? '0')" :read-only="true" :star-size="15" />                
             </span>
@@ -156,7 +157,7 @@ import IconMinus from '@/components/icons/IconMinus.vue';
 import ScaleIcon from '@/components/icons/ScaleIcon.vue';
 import ScaleMIcon from '@/components/icons/ScaleMIcon.vue';
 import IconDown from '@/components/icons/IconDown.vue';
-
+import Breadcrumbs from '@/components/Breadcrumbs.vue';
 
 const {
   products,

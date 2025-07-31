@@ -63,10 +63,15 @@ class ItemsRepository(IItemsRepository):
         return Item.objects.filter(name__icontains=query, is_active=True)
 
     def get_product_by_id(self, id: int, user: object | None = None) -> Item | None:
-        """Retrieve the current item by its ID."""
         try:
-            queryset = Item.objects.filter(id=id).annotate(
-                avg_rating=Avg("itemstarrating__stars"),
+            queryset = (
+                Item.objects.filter(id=id)
+                .select_related(
+                    "category",
+                )
+                .annotate(
+                    avg_rating=Avg("itemstarrating__stars"),
+                )
             )
 
             if user and hasattr(user, "id"):
