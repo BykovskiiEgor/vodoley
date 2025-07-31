@@ -1,10 +1,9 @@
-import json
+from pathlib import Path
 import os
 from datetime import timedelta
-from pathlib import Path
-
-from distutils.util import strtobool
 from dotenv import load_dotenv
+import json
+from distutils.util import strtobool
 
 # Путь к базе директории
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -16,6 +15,8 @@ load_dotenv(os.path.join(BASE_DIR, ".env"))
 SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() == "true"
 ALLOWED_HOSTS = json.loads(os.getenv("DJANGO_ALLOWED_HOSTS"))
+CSRF_TRUSTED_ORIGINS = json.loads(os.getenv("CSRF_TRUSTED_ORIGINS", "[]"))
+
 
 # Установленные приложения
 INSTALLED_APPS = [
@@ -43,10 +44,7 @@ INSTALLED_APPS = [
 ELASTICSEARCH_DSL = {
     "default": {
         "hosts": "http://elasticsearch:9200",
-        "basic_auth": (
-            os.getenv("ELASTIC_USERNAME"),
-            os.getenv("ELASTIC_PASSWORD"),
-        ),
+        "http_auth": ("elastic", "ixGr39uEgR1JfYG_F8yS"),
         "verify_certs": False,
         "ca_certs": None,
     },
@@ -145,7 +143,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Локализация и часовой пояс
 LANGUAGE_CODE = "ru"
-TIME_ZONE = "UTC"
+TIME_ZONE = "Europe/Moscow"
 USE_I18N = True
 USE_TZ = True
 
@@ -162,8 +160,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
 EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.yandex.ru")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", 465))
-EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "False").lower() == "true"
-EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "True").lower() == "true"
+EMAIL_USE_TLS = False
+EMAIL_USE_SSL = True
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "bykovsky.egor2017@yandex.ru")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 
