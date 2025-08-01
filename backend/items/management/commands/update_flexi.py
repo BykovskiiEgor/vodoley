@@ -62,9 +62,9 @@ class Command(BaseCommand):
         return parsed_features
 
     async def save_attributes(self, product, **attributes):
-        """Сохраняет атрибуты товара, создавая или обновляя существующие."""
+        """Сохраняет атрибуты товара, создавая или обновляя только при изменении."""
         try:
-            self.stdout.write(self.style.NOTICE(f"Processing attributes for product: {product.article}"))
+            self.stdout.write(self.style.NOTICE(f"Обработка атрибутов для товара: {product.article}"))
 
             for attr_name, attr_data in attributes.items():
                 if not attr_data:
@@ -74,28 +74,36 @@ class Command(BaseCommand):
                 if attr_value is None:
                     continue
 
-                self.stdout.write(self.style.NOTICE(f"Saving attribute: {attr_label} -> {attr_value}"))
+                self.stdout.write(self.style.NOTICE(f"Атрибут: {attr_label} → {attr_value}"))
 
                 attribute_obj, created = await sync_to_async(Attribute.objects.get_or_create, thread_sensitive=True)(
                     name=attr_label,
                 )
 
                 if created:
-                    self.stdout.write(self.style.SUCCESS(f"Created new attribute: {attr_label}"))
+                    self.stdout.write(self.style.SUCCESS(f"Создан новый атрибут: {attr_label}"))
 
-                item_attr, created = await sync_to_async(ItemAttribute.objects.update_or_create, thread_sensitive=True)(
-                    item=product,
-                    attribute=attribute_obj,
-                    defaults={"value": attr_value},
-                )
-
-                if created:
-                    self.stdout.write(self.style.SUCCESS(f"Added new attribute {attr_label} for product {product.article}"))
-                else:
-                    self.stdout.write(self.style.SUCCESS(f"Updated attribute {attr_label} for product {product.article}"))
+                try:
+                    item_attr = await sync_to_async(ItemAttribute.objects.get, thread_sensitive=True)(
+                        item=product,
+                        attribute=attribute_obj,
+                    )
+                    if item_attr.value != attr_value:
+                        item_attr.value = attr_value
+                        await sync_to_async(item_attr.save, thread_sensitive=True)()
+                        self.stdout.write(self.style.SUCCESS(f"Атрибут {attr_label} обновлён для {product.article}"))
+                    else:
+                        self.stdout.write(self.style.NOTICE(f"Атрибут {attr_label} не изменился для {product.article}"))
+                except ItemAttribute.DoesNotExist:
+                    await sync_to_async(ItemAttribute.objects.create, thread_sensitive=True)(
+                        item=product,
+                        attribute=attribute_obj,
+                        value=attr_value,
+                    )
+                    self.stdout.write(self.style.SUCCESS(f"Атрибут {attr_label} добавлен для {product.article}"))
 
         except Exception as ex:
-            self.stdout.write(self.style.ERROR(f"Failed to save attributes: {str(ex)}"))
+            self.stdout.write(self.style.ERROR(f"Ошибка при сохранении атрибутов: {str(ex)}"))
             raise
 
     async def add_description(self, article, description):
@@ -103,13 +111,20 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING(f"Артикул - {article} Описание - {description}"))
             if description is None:
                 return
-            await sync_to_async(
-                lambda: Item.objects.filter(article=article).update(description=description),
-                thread_sensitive=True,
-            )()
 
+            item = await sync_to_async(Item.objects.get, thread_sensitive=True)(article=article)
+
+            if item.description != description:
+                item.description = description
+                await sync_to_async(item.save, thread_sensitive=True)()
+                self.stdout.write(self.style.SUCCESS(f"Описание для {article} обновлено"))
+            else:
+                self.stdout.write(self.style.NOTICE(f"Описание для {article} не изменилось"))
+
+        except Item.DoesNotExist:
+            self.stdout.write(self.style.ERROR(f"Товар с артикулом {article} не найден"))
         except Exception as ex:
-            self.stdout.write(self.style.ERROR(f"Failed to save description: {str(ex)}"))
+            self.stdout.write(self.style.ERROR(f"Ошибка при сохранении описания: {str(ex)}"))
             raise
 
     def process_file(self, text: str) -> Generator[ItemParse, None, None]:
