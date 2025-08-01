@@ -51,7 +51,7 @@ class ItemsService:
     def get_current_item(self, item_id: int, user: object) -> tuple[Item | None, list[dict]]:
         """Retrieve the current item by its ID along with category breadcrumbs."""
         try:
-            item = self.items_repository.get_product_by_id(item_id, user)
+            item = self.items_repository.get_product_by_id(item_id, user, crumbs=True)
 
             if not item or not item.category:
                 return item
