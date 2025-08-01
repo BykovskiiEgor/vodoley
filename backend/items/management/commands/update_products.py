@@ -143,6 +143,10 @@ class Command(BaseCommand):
             article = str(row[2]).strip().lower()
             price = row[3]
 
+            if not article:
+                print(f"Пропущен товар без артикула: {name}")
+                continue
+
             try:
                 list_actual.append(article)
                 product = Item.objects.get(article__iexact=article)

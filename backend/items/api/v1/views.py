@@ -27,6 +27,8 @@ from user.models import CustomUser
 from .serializers import Images
 from .serializers import ItemSerializer
 from .serializers import RecommendItemSerializer
+from django.http import JsonResponse
+from items.tasks import run_flexi_update_command
 
 
 logger = logging.getLogger(__name__)
@@ -276,3 +278,8 @@ class SearchByPhoto(APIView):
             return Response(serializer.data)
 
         return None
+
+
+def trigger_flexi_update(request):
+    task = run_flexi_update_command.delay()
+    return JsonResponse({"task_id": task.id})

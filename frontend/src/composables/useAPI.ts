@@ -247,3 +247,11 @@ export async function requestCreateOrder(order: any){
 }
 
 
+export async function requestLogin(user: any){
+  try{
+    const response = await api.post('/login/', user);
+    return response
+  }catch(error){
+    throw error;
+  }
+}

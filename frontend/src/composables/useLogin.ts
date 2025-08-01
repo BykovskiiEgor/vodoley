@@ -1,7 +1,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
-import {requestPassword} from './useAPI'
+import {requestLogin, requestPassword} from './useAPI'
 
 
 interface User {
@@ -44,7 +44,7 @@ export function useLogin(){
         };
       
         try {
-          const response = await axios.post('http://127.0.0.1:8000/api/login/', user);
+          const response = await requestLogin(user);
           console.log('User logged in successfully:', response.data);
           alert('Вы успешно авторизировались');
           localStorage.setItem('user', JSON.stringify(response.data));

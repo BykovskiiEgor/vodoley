@@ -2,11 +2,14 @@ version: '3'
 
 services:
   django:
-    build: ./backend
+    image: avoid1/django-backend:latest
     container_name: django
-    command: python manage.py runserver 0.0.0.0:8000
+    command: gunicorn --workers 3 --timeout 120 --bind 0.0.0.0:8000 shop.wsgi:application
     volumes:
-      - ./backend:/app/backend
+      - ./media:/app/backend/media
+      - ./static:/app/backend/main/static
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
     ports:
       - 8000:8000
     depends_on:
@@ -15,24 +18,13 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - DJANGO_SETTINGS_MODULE=shop.settings
+      - TZ=Europe/Moscow
+    env_file:
+      - .env
     networks:
-      - backend
-      - src_backend_public
+      backend:
+      src_backend_public:
 
-  pgdb:
-    image: postgres:16
-    container_name: pgdb
-    environment:
-      - POSTGRES_DB=db
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-    volumes:
-      - pgdbdata:/var/lib/postgresql/data/
-    ports:
-      - "5434:5432"
-    networks:
-      - backend
-   
   redis:
     image: redis:7-alpine
     container_name: redis
@@ -43,40 +35,81 @@ services:
     networks:
       - backend
 
-  celery:
-    build: ./backend
-    container_name: celery
-    command: sh -c "pip install -r requirements.txt && celery -A shop worker --loglevel=info"
+  pgdb:
+    image: postgres
+    container_name: pgdb
+    environment:
+      - POSTGRES_DB=shop
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
-      - ./backend:/app/backend
+      - pgdbdata:/var/lib/postgresql/data/
+    ports:
+      - "5434:5432"
+    networks:
+      backend:
+
+  frontend:
+    image: avoid1/vue-frontend:latest
+    container_name: frontend
+    volumes:
+      - frontend_dist:/output
+    env_file:
+      - .env.frontend
+    command: ["sh", "-c", "npm run build && cp -r dist /output"]
+
+  nginx:
+    image: avoid1/nginx-custom:latest
+    container_name: nginx
+    depends_on:
+      - frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/vodoley-belebey.ru/fullchain.pem:/etc/letsencrypt/live/vodoley-belebey.ru/fullchain.pem
+      - ./nginx/vodoley-belebey.ru/privkey.pem:/etc/letsencrypt/live/vodoley-belebey.ru/privkey.pem
+      - frontend_dist:/usr/share/nginx/html
+      - ./backend/main/static:/usr/share/nginx/html/static
+      - ./media:/usr/share/nginx/media
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    networks:
+      backend:
+
+  celery:
+    image: avoid1/django-backend:latest
+    container_name: celery
+    command: celery -A shop worker --loglevel=info
     depends_on:
       - django
-      - redis
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - DJANGO_SETTINGS_MODULE=shop.settings
+    env_file:
+      - .env
     networks:
-      - backend
+      backend:
 
   celery-beat:
-    build: ./backend
+    image: avoid1/django-backend:latest
     container_name: celery-beat
-    command: sh -c "pip install -r requirements.txt && celery -A shop beat --loglevel=info"
+    command: celery -A shop beat --loglevel=info
     volumes:
-      - ./backend:/app/backend
+      - ./media:/app/backend/media
     depends_on:
       - django
-      - redis
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - DJANGO_SETTINGS_MODULE=shop.settings
+    env_file:
+      - .env
     networks:
-      - backend
+      backend:
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.6.1
+    image: elasticsearch:8.7.1
     container_name: elasticsearch
     ports:
       - "9200:9200"
@@ -84,19 +117,19 @@ services:
     environment:
       - "discovery.type=single-node"
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
-      - ELASTIC_USER=${ELASTIC_USERNAME}
+      - ELASTIC_USER=elastic
       - ELASTIC_PASS=${ELASTIC_PASSWORD}
       - "xpack.security.enabled=false"
     networks:
-      - backend
-
+      backend:
 
 volumes:
   pgdbdata:
   redisdata:
-  
+  frontend_dist:
+
 networks:
   backend:
     driver: bridge
-  src_backend_public:  
+  src_backend_public:
     external: true
