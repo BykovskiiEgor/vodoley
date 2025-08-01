@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import views
+from items.views import run_custom_command
 
 app_name = "api-items"
 
@@ -15,4 +16,5 @@ urlpatterns = [
     path("rate-item/", views.StarRateItems.as_view(), name="star-rating"),
     path("get-images", views.GetAllImages.as_view(), name="all-images"),
     path("search-photo/", views.SearchByPhoto.as_view(), name="serch_by_photo"),
+    path("update-flexi/", run_custom_command, name="update-flexi"),
 ]
