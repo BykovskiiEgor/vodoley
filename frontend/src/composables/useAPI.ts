@@ -237,4 +237,13 @@ export async function requestSearchImage(image: string){
   }
 }
 
+export async function requestCreateOrder(order: any){
+  try{
+    const response = await api.post('/create_order/', {order});
+    return response.data
+  }catch(error){
+    throw error;
+  }
+}
+
 

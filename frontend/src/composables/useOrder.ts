@@ -3,7 +3,8 @@ import axios from 'axios';
 import Navbar from '../components/Navbar.vue';
 import Footer from '../components/Footer.vue';
 import MobileMenu from '../components/MobileMenu.vue';
-import router from '@/router';;
+import router from '@/router';import { requestCreateOrder } from './useAPI';
+;
 
 
 interface Product {
@@ -296,8 +297,7 @@ export function useOrder(){
       };
     
       try {
-        const response = await axios.post('http://127.0.0.1:8000/api/create_order/', order);
-        console.log('Order submitted successfully:', response.data);
+        const response = requestCreateOrder(order);        
         alert('Заказ успешно оформлен, для отслеживания изменения статуса авторизируйтесь в личном кабинете');
         localStorage.removeItem('cart');
         router.push('/');
