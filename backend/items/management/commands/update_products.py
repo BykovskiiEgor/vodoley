@@ -30,7 +30,7 @@ class Command(BaseCommand):
 
             row_str = str(row[0])
 
-            article = str(row[2]).strip().lower()
+            article = str(row[2]).strip()
             if not parsing_started:
                 if article:
                     list_to_delete.append(article)
@@ -43,9 +43,9 @@ class Command(BaseCommand):
 
             rows_to_process.append(row)
 
-        all_articles = {str(row[2]).strip().lower() for row in rows_to_process if row[2]}
+        all_articles = {str(row[2]).strip() for row in rows_to_process if row[2]}
         existing_items = Item.objects.filter(article__in=all_articles)
-        existing_map = {item.article.lower(): item for item in existing_items}
+        existing_map = {item.article: item for item in existing_items}
 
         to_create = []
         to_update = []
@@ -53,7 +53,7 @@ class Command(BaseCommand):
         for row in rows_to_process:
             name = row[0]
             quantity = 0 if pd.isna(row[1]) else row[1]
-            article = str(row[2]).strip().lower()
+            article = str(row[2]).strip()
             price = row[3]
 
             if not article:
