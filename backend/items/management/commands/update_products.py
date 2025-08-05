@@ -3,6 +3,15 @@ from django.core.management.base import BaseCommand
 from items.models import Item
 
 
+def normalize_article(article):
+    if pd.isna(article):
+        return None
+    article = str(article).strip().lower()
+    if article.endswith(".0"):
+        article = article[:-2]
+    return article.replace("\xa0", " ").strip()
+
+
 class Command(BaseCommand):
     help = "Update products from Excel file"
 
@@ -13,7 +22,7 @@ class Command(BaseCommand):
         actual_data = set(list_to_delete) - set(list_actual)
         for article in actual_data:
             try:
-                item = Item.objects.get(article=article)
+                item = Item.objects.get(article__iexact=article)
                 print(f"Ненужный товар {item.name}:{item.article}")
                 item.delete()
             except Item.DoesNotExist:
@@ -40,11 +49,11 @@ class Command(BaseCommand):
                 continue
 
             row_str = str(row[0])
-            article = str(row[2]).strip()
+            raw_article = normalize_article(row[2])
 
             if not parsing_started:
-                if article:
-                    list_to_delete.append(article)
+                if raw_article:
+                    list_to_delete.append(raw_article)
                 if row_str.strip() == ignore_until:
                     parsing_started = True
                 continue
@@ -53,11 +62,13 @@ class Command(BaseCommand):
                 continue
 
             rows_to_process.append(row)
-            if article:
-                articles_in_file.add(article)
+            if raw_article:
+                articles_in_file.add(raw_article)
 
         existing_items = Item.objects.filter(article__in=articles_in_file)
-        existing_map = {item.article: item for item in existing_items}
+        existing_map = {normalize_article(item.article): item for item in existing_items}
+
+        print(f"Найдено совпадений в базе: {len(existing_map)} из {len(articles_in_file)}")
 
         items_to_create = []
         items_to_update = []
@@ -65,7 +76,7 @@ class Command(BaseCommand):
         for row in rows_to_process:
             name = row[0]
             quantity = row[1]
-            article = str(row[2]).strip()
+            article = normalize_article(row[2])
             price = row[3]
 
             if not article:
@@ -126,6 +137,7 @@ class Command(BaseCommand):
 
         if items_to_create:
             Item.objects.bulk_create(items_to_create, batch_size=500)
+            print(f"Создано новых товаров: {len(items_to_create)}")
 
         if items_to_update:
             Item.objects.bulk_update(
@@ -133,6 +145,7 @@ class Command(BaseCommand):
                 ["name", "price", "quantity", "available", "quantity_status"],
                 batch_size=500,
             )
+            print(f"Обновлено товаров: {len(items_to_update)}")
 
         self.check_actuality(list_to_delete, list_actual)
 
