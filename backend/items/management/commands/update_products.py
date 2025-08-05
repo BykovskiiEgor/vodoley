@@ -6,7 +6,7 @@ from items.models import Item
 def normalize_article(article):
     if pd.isna(article):
         return None
-    article = str(article).strip().lower()
+    article = str(article).strip()
     if article.endswith(".0"):
         article = article[:-2]
     return article.replace("\xa0", " ").strip()
@@ -65,8 +65,15 @@ class Command(BaseCommand):
             if raw_article:
                 articles_in_file.add(raw_article)
 
-        existing_items = Item.objects.filter(article__in=articles_in_file)
-        existing_map = {normalize_article(item.article): item for item in existing_items}
+        existing_items = []
+        for article in articles_in_file:
+            try:
+                item = Item.objects.get(article__iexact=article)
+                existing_items.append(item)
+            except Item.DoesNotExist:
+                pass
+
+        existing_map = {item.article.lower(): item for item in existing_items}
 
         print(f"Найдено совпадений в базе: {len(existing_map)} из {len(articles_in_file)}")
 
@@ -96,7 +103,7 @@ class Command(BaseCommand):
             else:
                 quantity_status = "В наличии"
 
-            existing_item = existing_map.get(article)
+            existing_item = existing_map.get(article.lower())
 
             if existing_item:
                 changed = False
