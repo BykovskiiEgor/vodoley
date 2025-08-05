@@ -13,7 +13,7 @@ class Command(BaseCommand):
         actual_data = set(list_to_delete) - set(list_actual)
         for article in actual_data:
             try:
-                item = Item.objects.get(article__iexact=article)
+                item = Item.objects.get(article=article)
                 print(f"Ненужный товар {item.name}:{item.article}")
                 item.delete()
             except Item.DoesNotExist:
