@@ -1,7 +1,6 @@
 import pandas as pd
 from django.core.management.base import BaseCommand
 from items.models import Item
-from django.db import transaction
 
 
 class Command(BaseCommand):
@@ -9,6 +8,16 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("file_path", type=str, help="Путь к Excel файлу")
+
+    def check_actuality(self, list_to_delete, list_actual):
+        actual_data = set(list_to_delete) - set(list_actual)
+        for article in actual_data:
+            try:
+                item = Item.objects.get(article__iexact=article)
+                print(f"Ненужный товар {item.name}:{item.article}")
+                item.delete()
+            except Item.DoesNotExist:
+                pass
 
     def handle(self, **kwargs):
         file_path = kwargs["file_path"]
@@ -21,16 +30,18 @@ class Command(BaseCommand):
         parsing_started = False
 
         list_to_delete = []
-        list_actual = set()
+        list_actual = []
+
         rows_to_process = []
+        articles_in_file = set()
 
         for row in data:
             if all(pd.isna(cell) for cell in row):
                 continue
 
             row_str = str(row[0])
-
             article = str(row[2]).strip()
+
             if not parsing_started:
                 if article:
                     list_to_delete.append(article)
@@ -42,26 +53,30 @@ class Command(BaseCommand):
                 continue
 
             rows_to_process.append(row)
+            if article:
+                articles_in_file.add(article.lower())
 
-        all_articles = {str(row[2]).strip() for row in rows_to_process if row[2]}
-        existing_items = Item.objects.filter(article__in=all_articles)
-        existing_map = {item.article: item for item in existing_items}
+        existing_items = Item.objects.filter(article__iexact__in=articles_in_file)
+        existing_map = {item.article.lower(): item for item in existing_items}
 
-        to_create = []
-        to_update = []
+        items_to_create = []
+        items_to_update = []
 
         for row in rows_to_process:
             name = row[0]
-            quantity = 0 if pd.isna(row[1]) else row[1]
+            quantity = row[1]
             article = str(row[2]).strip()
+            article_key = article.lower()
             price = row[3]
 
             if not article:
                 print(f"Пропущен товар без артикула: {name}")
                 continue
 
-            list_actual.add(article)
+            list_actual.append(article)
 
+            if pd.isna(quantity):
+                quantity = 0
             available = quantity > 0
             if not available:
                 quantity_status = "Привезем под заказ"
@@ -70,55 +85,56 @@ class Command(BaseCommand):
             else:
                 quantity_status = "В наличии"
 
-            if article in existing_map:
-                item = existing_map[article]
-                updated_fields = []
+            existing_item = existing_map.get(article_key)
 
-                if item.name != name:
-                    item.name = name
-                    updated_fields.append("name")
+            if existing_item:
+                changed = False
 
-                if item.price != price:
-                    item.price = price
-                    updated_fields.append("price")
+                if existing_item.name != name:
+                    existing_item.name = name
+                    changed = True
 
-                if item.quantity != quantity:
-                    item.quantity = quantity
-                    updated_fields.append("quantity")
+                if existing_item.price != price:
+                    existing_item.price = price
+                    changed = True
 
-                if item.available != available:
-                    item.available = available
-                    updated_fields.append("available")
+                if existing_item.quantity != quantity:
+                    existing_item.quantity = quantity
+                    changed = True
 
-                if item.quantity_status != quantity_status:
-                    item.quantity_status = quantity_status
-                    updated_fields.append("quantity_status")
+                if existing_item.available != available:
+                    existing_item.available = available
+                    changed = True
 
-                if updated_fields:
-                    to_update.append(item)
+                if existing_item.quantity_status != quantity_status:
+                    existing_item.quantity_status = quantity_status
+                    changed = True
+
+                if changed:
+                    items_to_update.append(existing_item)
+
             else:
-                to_create.append(
-                    Item(
-                        name=name,
-                        article=article,
-                        price=price,
-                        available=available,
-                        quantity_status=quantity_status,
-                        category_id=268,
-                        quantity=quantity,
-                    )
+                item = Item(
+                    name=name,
+                    article=article,
+                    price=price,
+                    available=available,
+                    quantity_status=quantity_status,
+                    category_id=268,
+                    quantity=quantity,
                 )
+                items_to_create.append(item)
 
-        with transaction.atomic():
-            if to_create:
-                Item.objects.bulk_create(to_create, batch_size=500)
+        if items_to_create:
+            Item.objects.bulk_create(items_to_create, batch_size=500)
 
-            if to_update:
-                Item.objects.bulk_update(to_update, ["name", "price", "quantity", "available", "quantity_status"], batch_size=500)
+        if items_to_update:
+            Item.objects.bulk_update(
+                items_to_update,
+                ["name", "price", "quantity", "available", "quantity_status"],
+                batch_size=500,
+            )
 
-            outdated_articles = set(list_to_delete) - list_actual
-            if outdated_articles:
-                deleted = Item.objects.filter(article__in=outdated_articles).delete()
-                print(f"Удалено устаревших товаров: {deleted[0]}")
+        self.check_actuality(list_to_delete, list_actual)
 
         self.stdout.write(self.style.SUCCESS("Successfully updated products"))
