@@ -6,4 +6,4 @@ class Command(BaseCommand):
     help = "Edit articles of items"
 
     def handle(self, **kwargs):
-        Item.objects.filter(category_id=268).delete()
+        Item.objects.all().delete()

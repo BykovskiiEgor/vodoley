@@ -24,10 +24,11 @@ class Command(BaseCommand):
         to_remove = delete_set - actual_set
 
         if to_remove:
-            removed_items = Item.objects.filter(article__in=to_remove)
-            for item in removed_items:
+            db_items = Item.objects.all()
+            items_to_remove = [item for item in db_items if normalize_article(item.article) in to_remove]
+            for item in items_to_remove:
                 print(f"Ненужный товар {item.name}:{item.article}")
-            removed_items.delete()
+            Item.objects.filter(id__in=[item.id for item in items_to_remove]).delete()
 
     def handle(self, **kwargs):
         file_path = kwargs["file_path"]
@@ -65,8 +66,8 @@ class Command(BaseCommand):
                 normalized_articles.add(raw_article)
             rows_to_process.append(row)
 
-        db_items = Item.objects.filter(article__in=normalized_articles)
-        existing_map = {normalize_article(item.article): item for item in db_items}
+        db_items = Item.objects.all()
+        existing_map = {normalize_article(item.article): item for item in db_items if normalize_article(item.article) in normalized_articles}
 
         print(f"Найдено совпадений в базе: {len(existing_map)} из {len(normalized_articles)}")
 
@@ -77,7 +78,8 @@ class Command(BaseCommand):
             name = row[0]
             quantity = row[1]
             price = row[3]
-            article = normalize_article(row[2])
+            article_raw = row[2]
+            article = normalize_article(article_raw)
 
             if not article:
                 print(f"Пропущен товар без артикула: {name}")
@@ -126,7 +128,7 @@ class Command(BaseCommand):
             else:
                 item = Item(
                     name=name,
-                    article=article,
+                    article=str(article_raw).strip(),
                     price=price,
                     available=available,
                     quantity_status=quantity_status,
