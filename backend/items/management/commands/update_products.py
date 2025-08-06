@@ -9,7 +9,7 @@ def normalize_article(article):
     article = str(article).strip()
     if article.endswith(".0"):
         article = article[:-2]
-    return article.replace("\xa0", " ").strip()
+    return article.replace("\xa0", " ").strip().lower()
 
 
 class Command(BaseCommand):
@@ -19,14 +19,15 @@ class Command(BaseCommand):
         parser.add_argument("file_path", type=str, help="Путь к Excel файлу")
 
     def check_actuality(self, list_to_delete, list_actual):
-        actual_data = set(list_to_delete) - set(list_actual)
-        for article in actual_data:
-            try:
-                item = Item.objects.get(article__iexact=article)
+        delete_set = set(filter(None, map(normalize_article, list_to_delete)))
+        actual_set = set(filter(None, map(normalize_article, list_actual)))
+        to_remove = delete_set - actual_set
+
+        if to_remove:
+            removed_items = Item.objects.filter(article__in=to_remove)
+            for item in removed_items:
                 print(f"Ненужный товар {item.name}:{item.article}")
-                item.delete()
-            except Item.DoesNotExist:
-                pass
+            removed_items.delete()
 
     def handle(self, **kwargs):
         file_path = kwargs["file_path"]
@@ -38,44 +39,37 @@ class Command(BaseCommand):
         ignore_until = "Ванна поддоны"
         parsing_started = False
 
+        rows_to_process = []
         list_to_delete = []
         list_actual = []
-
-        rows_to_process = []
-        articles_in_file = set()
+        normalized_articles = set()
 
         for row in data:
             if all(pd.isna(cell) for cell in row):
                 continue
 
-            row_str = str(row[0])
+            name_cell = str(row[0])
             raw_article = normalize_article(row[2])
 
             if not parsing_started:
                 if raw_article:
                     list_to_delete.append(raw_article)
-                if row_str.strip() == ignore_until:
+                if name_cell.strip() == ignore_until:
                     parsing_started = True
                 continue
 
             if all(pd.isna(row[i]) for i in range(1, 4)):
                 continue
 
-            rows_to_process.append(row)
             if raw_article:
-                articles_in_file.add(raw_article)
+                normalized_articles.add(raw_article)
+            rows_to_process.append(row)
 
-        existing_items = []
-        for article in articles_in_file:
-            try:
-                item = Item.objects.get(article__iexact=article)
-                existing_items.append(item)
-            except Item.DoesNotExist:
-                pass
+        # Получаем все товары из базы с нужными артикулами одним запросом
+        db_items = Item.objects.filter(article__in=normalized_articles)
+        existing_map = {normalize_article(item.article): item for item in db_items}
 
-        existing_map = {item.article.lower(): item for item in existing_items}
-
-        print(f"Найдено совпадений в базе: {len(existing_map)} из {len(articles_in_file)}")
+        print(f"Найдено совпадений в базе: {len(existing_map)} из {len(normalized_articles)}")
 
         items_to_create = []
         items_to_update = []
@@ -83,8 +77,8 @@ class Command(BaseCommand):
         for row in rows_to_process:
             name = row[0]
             quantity = row[1]
-            article = normalize_article(row[2])
             price = row[3]
+            article = normalize_article(row[2])
 
             if not article:
                 print(f"Пропущен товар без артикула: {name}")
@@ -103,7 +97,7 @@ class Command(BaseCommand):
             else:
                 quantity_status = "В наличии"
 
-            existing_item = existing_map.get(article.lower())
+            existing_item = existing_map.get(article)
 
             if existing_item:
                 changed = False
@@ -137,7 +131,7 @@ class Command(BaseCommand):
                     price=price,
                     available=available,
                     quantity_status=quantity_status,
-                    category_id=268,
+                    category_id=2,
                     quantity=quantity,
                 )
                 items_to_create.append(item)
