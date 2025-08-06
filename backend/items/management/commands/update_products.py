@@ -130,7 +130,7 @@ class Command(BaseCommand):
                     price=price,
                     available=available,
                     quantity_status=quantity_status,
-                    category_id=2,
+                    category_id=268,
                     quantity=quantity,
                 )
                 items_to_create.append(item)
