@@ -65,7 +65,6 @@ class Command(BaseCommand):
                 normalized_articles.add(raw_article)
             rows_to_process.append(row)
 
-        # Получаем все товары из базы с нужными артикулами одним запросом
         db_items = Item.objects.filter(article__in=normalized_articles)
         existing_map = {normalize_article(item.article): item for item in db_items}
 
