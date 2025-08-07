@@ -1,16 +1,19 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
-import ProductDetailsView from '../views/ItemView.vue'
-import CartView from '../views/CartView.vue'
-import ProductsView from '../views/ProductsView.vue'
-import CategoriesView from '../views/CategoriesView.vue'
-import RecommendationsView from '../views/RecommendationsView.vue'
-import DiscountView from '../views/DiscountView.vue'
-import SearchItemsView from '../views/SearchItemsView.vue'
-import OrderView from '../views/OrderView.vue'
-import UserProfileView from '../views/UserProfileView.vue'
-import LoginView from '../views/LogInView.vue'
-import SearchByImageView from '@/views/SearchByImageView.vue'
+
+const HomeView = () => import('../views/HomeView.vue')
+const ProductDetailsView = () => import('../views/ItemView.vue')
+const CartView = () => import('../views/CartView.vue')
+const ProductsView = () => import('../views/ProductsView.vue')
+const CategoriesView = () => import('../views/CategoriesView.vue')
+const RecommendationsView = () => import('../views/RecommendationsView.vue')
+const DiscountView = () => import('../views/DiscountView.vue')
+const SearchItemsView = () => import('../views/SearchItemsView.vue')
+const OrderView = () => import('../views/OrderView.vue')
+const UserProfileView = () => import('../views/UserProfileView.vue')
+const LoginView = () => import('../views/LogInView.vue')
+const SearchByImageView = () => import('@/views/SearchByImageView.vue')
+const AboutView = () => import('../views/AboutView.vue')
+
 
 
 const router = createRouter({
@@ -19,71 +22,49 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: HomeView,
-      meta: {
-        breadcrumb: 'Главная',
-      },
+      component: HomeView,      
     },
     {
       path: '/about',
       name: 'about',
-      component: () => import('../views/AboutView.vue'),
-      meta: {
-        breadcrumb: 'О нас',
-      },
+      component: AboutView,      
     },
     {
       path: '/current-items/:id',
       name: 'ProductDetails',
       component: ProductDetailsView,
-      props: true,
-      meta: {
-        breadcrumb: 'Товар',
-      }, 
+      props: true,       
     },
     {
       path: '/cart',
       name: 'cart',
       component: CartView,
-      props: true,
-      meta: {
-        breadcrumb: 'Корзина',
-      },
+      props: true,      
     },
     {
       path: '/order',
       name: 'order',
       component: OrderView,
-      props: true,
-      meta: {
-        breadcrumb: 'Заказ',
-      }, 
+      props: true,      
     },
     {
       path: '/products/:categoryID',
       name: 'products',
       component: ProductsView,
-      props: true,
-      meta: {
-        breadcrumb: 'Категории',
-      },      
+      props: true,          
     },
     {
       path: '/categories',
       name: 'categories',
       component: CategoriesView,
-      props: true, 
-      meta: {
-        breadcrumb: 'Каталог',
-      }, 
+      props: true,       
     },
     {
       path: '/profile',
       name: 'profile',
       component: UserProfileView,
       props: true,
-      meta: {
-        breadcrumb: 'Профиль',
+      meta: {        
         requiresAuth: true 
       },
       beforeEnter: (to, from, next) => {
@@ -107,20 +88,14 @@ const router = createRouter({
       path: '/recommendations',
       name: 'recommendations',
       component: RecommendationsView,
-      props: true, 
-      meta: {
-        breadcrumb: 'Рекомендации',
-      }, 
+      props: true,       
     },
 
     {
       path: '/discounts',
       name: 'discounts',
       component: DiscountView,
-      props: true,
-      meta: {
-        breadcrumb: 'Скидки',
-      }, 
+      props: true,      
     },
     
     {

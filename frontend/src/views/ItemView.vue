@@ -108,7 +108,7 @@
               <component :is="isExpanded ? IconUp : IconDown" />    
             </button> 
           </div>
-          <div v-if="product.description.length > 0" class="description-section">
+          <div v-if="product.description && product.description.length > 0" class="description-section">
             <span class="border-line"></span>
             <span class="dac-names" >Описание</span>
             <div class="description-container">
