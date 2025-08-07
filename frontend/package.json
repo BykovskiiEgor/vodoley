@@ -13,8 +13,7 @@
     "build-only": "vite build",
     "type-check": "vue-tsc --build --force",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
-    "format": "prettier --write src/",
-    "analyze": "vite build"
+    "format": "prettier --write src/"    
   },
   "dependencies": {
     "@types/vue": "^2.0.0",
