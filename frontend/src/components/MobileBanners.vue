@@ -37,7 +37,7 @@
         </div>
         <div class="mobile-gallery-item">
             <router-link :to="`/products/${243}`">
-                <img src="images/toilet.jpg" alt="Toilet">
+                <img src="/images/toilet.jpg" alt="Toilet">
             </router-link>
         </div>
     </div>
