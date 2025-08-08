@@ -183,9 +183,9 @@
 </template>
 
 <script setup lang="ts">
-import Navbar from '../components/Navbar.vue';
-import Footer from '../components/Footer.vue';
-import MobileMenu from '../components/MobileMenu.vue';
+import { defineAsyncComponent } from 'vue';
+
+const Navbar = defineAsyncComponent(() => import('../components/Navbar.vue'));
 import {useProfile} from '../composables/useProfile';
 import ChangeIcon from '@/components/icons/ChangeIcon.vue';
 import LkIcon from '@/components/icons/LkIcon.vue';
@@ -196,7 +196,6 @@ import IconExit from '@/components/icons/IconExit.vue';
 
 const {
     edit,
-    data,
     orders,
     user,
     formatDate,
@@ -207,7 +206,6 @@ const {
     formData,
     shouldShowError,
     formErrors,
-    getOrders,
     filter,
     getFilters,
     addresses,

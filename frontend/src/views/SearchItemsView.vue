@@ -19,23 +19,7 @@
             </select>
           </div>                     
         </div>
-        <div class="products-container">
-          <!-- <div class="sort-container">
-            <form class="sort" @submit.prevent="fetchProducts(currentPage)">              
-              <select v-model="filter" class="form-select">
-                <option disabled value="">Наличие</option>
-                <option>Все</option>
-                <option value="exists">В наличии</option>
-                <option value="not_exists">Под заказ</option>
-              </select>
-              <select v-model="sort" class="form-select">
-                <option disabled value="">Цена</option>
-                <option>Без сортировки</option>
-                <option value="asc">Цена меньше</option>
-                <option value="desc">Цена больше</option>
-              </select>    
-            </form>    
-          </div>   -->
+        <div class="products-container">          
           <div class="filter-attributes-container">                  
             <template v-for="(value, key) in attributeFilters" :key="key">
               <div v-if="value" class="selected-attribute">
@@ -77,20 +61,20 @@
     <MobileMenu />
 </template>
   
-  <script setup lang="ts">
-  import Navbar from '../components/Navbar.vue';
-  import Footer from '../components/Footer.vue';
-  import MobileMenu from '../components/MobileMenu.vue';
-  import Pagination from '../components/Pagination.vue';
-  import { useSearch } from '../composables/useSearch';
-  import ItemCard from '../components/ItemCard.vue';
+<script setup lang="ts">
+import { defineAsyncComponent } from 'vue';
+
+const Navbar = defineAsyncComponent(() => import('../components/Navbar.vue'));
+const Footer = defineAsyncComponent(() => import('../components/Footer.vue'));
+const MobileMenu = defineAsyncComponent(() => import('../components/MobileMenu.vue'));
+const Pagination = defineAsyncComponent(() => import('../components/Pagination.vue'));
+import { useSearch } from '../composables/useSearch';
+const ItemCard = defineAsyncComponent(() => import('../components/ItemCard.vue'));
   
   const {
     products,
     currentPage, 
-    totalPages,
-    filter,
-    sort,
+    totalPages,  
     cart,
     addToCart,
     increment,
@@ -100,9 +84,9 @@
     attributeFilters,
     clearFilter,
   } = useSearch();
-  </script>
+</script>
   
-  <style scoped>
+<style scoped>
 .container {
   width: 100%;
   max-width: 1200px;

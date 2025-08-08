@@ -68,7 +68,7 @@ export function useSearch() {
     .then(data => {
       products.value = data.results;
       console.log(products.value)
-      totalPages.value = Math.ceil(data.count / pageSize.value);
+      totalPages.value = Math.ceil(data.count / data.pageSize);
     })
     .catch(error => {
       console.error('Fetch products error:', error.message);

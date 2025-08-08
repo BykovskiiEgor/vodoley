@@ -13,7 +13,7 @@
         :key="category.id">   
           <div class="category-header">
             <router-link class="category-link" :to="`/products/${category.id}`">
-              <img class="category-image" :src="category.image ? category.image : '/images/waterdrop.png'" />
+              <img loading="lazy" class="category-image" :src="category.image ? category.image : '/images/waterdrop.png'" />
               <h5 style="margin-left: 10px; padding-bottom: 8px;">{{ category.name }}</h5>
             </router-link>            
           </div>
@@ -38,14 +38,12 @@
 
 
 <script setup lang="ts">
-import MobileMenu from '../components/MobileMenu.vue'
-import Navbar from '../components/Navbar.vue';
-import Footer from '../components/Footer.vue';
-import TreeNode from '../components/TreeNode.vue'; 
-import IconUp from '@/components/icons/IconUp.vue';
-import IconDown from '@/components/icons/IconDown.vue';
+import { defineAsyncComponent } from 'vue';
+const MobileMenu = defineAsyncComponent(() => import('../components/MobileMenu.vue'));
+const Navbar = defineAsyncComponent(() => import('../components/Navbar.vue'));
+const Footer = defineAsyncComponent(() => import('../components/Footer.vue'));
+const TreeNode = defineAsyncComponent(() => import('../components/TreeNode.vue')); 
 import { useCategories } from '@/composables/useCategories';
-import { includes } from 'lodash-es';
 
 
 const {

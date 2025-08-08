@@ -32,12 +32,14 @@
   </template>
   
   <script setup lang="ts">
-  import Navbar from '../components/Navbar.vue';
-  import Footer from '../components/Footer.vue';
-  import MobileMenu from '../components/MobileMenu.vue';
-  import Pagination from '../components/Pagination.vue';
+  import { defineAsyncComponent } from 'vue';
+
+  const Navbar = defineAsyncComponent(() => import('../components/Navbar.vue'));
+  const Footer = defineAsyncComponent(() => import('../components/Footer.vue'));
+  const MobileMenu = defineAsyncComponent(() => import('../components/MobileMenu.vue'));
+  const Pagination = defineAsyncComponent(() => import('../components/Pagination.vue'));  
   import { useDiscounts } from '../composables/useDiscounts';
-  import ItemCard from '../components/ItemCard.vue'
+  const ItemCard = defineAsyncComponent(() => import('../components/ItemCard.vue')); 
 
   const {
     products,

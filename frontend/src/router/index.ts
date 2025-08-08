@@ -11,7 +11,6 @@ const SearchItemsView = () => import('../views/SearchItemsView.vue')
 const OrderView = () => import('../views/OrderView.vue')
 const UserProfileView = () => import('../views/UserProfileView.vue')
 const LoginView = () => import('../views/LogInView.vue')
-const SearchByImageView = () => import('@/views/SearchByImageView.vue')
 const AboutView = () => import('../views/AboutView.vue')
 
 
@@ -103,13 +102,7 @@ const router = createRouter({
       name: 'search',
       component: SearchItemsView,
       props: route => ({ query: route.query.q })
-    },
-
-    {
-      path: '/search-by-image',
-      name: 'search-by-image',
-      component: SearchByImageView,     
-    },
+    },    
   ]
 })
 

@@ -1,7 +1,9 @@
 <script setup>
-import Navbar from '../components/Navbar.vue'
-import MobileMenu from '../components/MobileMenu.vue'
-import Footer from '../components/Footer.vue';
+import { defineAsyncComponent } from 'vue';
+
+const Navbar = defineAsyncComponent(() => import('../components/Navbar.vue'));
+const Footer = defineAsyncComponent(() => import('../components/Footer.vue'));
+const MobileMenu = defineAsyncComponent(() => import('../components/MobileMenu.vue'));
 import IconPhone from '@/components/icons/IconPhone.vue';
 import IconAdress from '@/components/icons/IconAdress.vue';
 </script>

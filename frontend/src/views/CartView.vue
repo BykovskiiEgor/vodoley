@@ -136,14 +136,14 @@
 </template>
 
 <script setup lang="ts">
+import { defineAsyncComponent } from 'vue';
 import { onMounted } from 'vue';
-import Navbar from '../components/Navbar.vue';
+const Navbar = defineAsyncComponent(() => import('../components/Navbar.vue'));
 import IconTrash from '../components/icons/IconTrash.vue';
-import MobileMenu from '../components/MobileMenu.vue';
+const MobileMenu = defineAsyncComponent(() => import('../components/MobileMenu.vue'));
 import { useCart } from '../composables/useCart';
 import IconMinusBlack from '@/components/icons/IconMinusBlack.vue';
 import IconPlusBlack from '@/components/icons/IconPlusBlack.vue';
-import IconNo from '@/components/icons/IconNo.vue';
 import IconNoBlack from '@/components/icons/IconNoBlack.vue';
 
 const {
@@ -152,7 +152,6 @@ const {
   loadCartItems,
   clearCart,
   removeFromCart,
-  calculateTotalPrice,
   increment,
   decrement,
   calculatedPrices,

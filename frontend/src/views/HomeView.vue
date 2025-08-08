@@ -8,17 +8,17 @@
         <div class="carousel-inner" style="border-radius: 10px;" >
           <div class="carousel-item active">
             <router-link :to="{ name: 'discounts' }">
-              <img class="d-block w-100" src="../assets/disc.jpg" alt="First slide">
+              <img loading="lazy" class="d-block w-100" src="/images/disc.jpg" alt="First slide">
             </router-link>
           </div>
           <div class="carousel-item">
             <router-link :to="{ name: 'recommendations' }" >
-              <img class="d-block w-100" src="../assets/rec.jpg" alt="Second slide">
+              <img loading="lazy" class="d-block w-100" src="/images/rec.jpg" alt="Second slide">
             </router-link>
           </div>
           <div class="carousel-item">
             <router-link :to="`/products/${268}`">
-              <img class="d-block w-100" src="../assets/new.jpg" alt="Third slide">
+              <img loading="lazy" class="d-block w-100" src="/images/new.jpg" alt="Third slide">
             </router-link>
           </div>
         </div>
@@ -38,28 +38,28 @@
                 <div class="col-md-3">
                   <div class="card card-body">
                     <router-link :to="`/products/${235}`">
-                      <img class="d-block w-100" src="../assets/mix.jpg" alt="...">
+                      <img loading="lazy" class="d-block w-100" src="/images/mix.jpg" alt="...">
                     </router-link>
                   </div>
                 </div>
                 <div class="col-md-3">
                   <div class="card card-body">
                     <router-link :to="`/products/${238}`">
-                      <img class="d-block w-100" src="../assets/shower.jpg" alt="...">
+                      <img loading="lazy" class="d-block w-100" src="/images/shower.jpg" alt="...">
                     </router-link>
                   </div>
                 </div>
                 <div class="col-md-3">
                   <div class="card card-body">
                     <router-link :to="`/products/${168}`">
-                      <img class="d-block w-100" src="../assets/wash.jpg" alt="...">
+                      <img loading="lazy" class="d-block w-100" src="/images/wash.jpg" alt="...">
                     </router-link>
                   </div>
                 </div>
                 <div class="col-md-3">
                   <div class="card card-body">
                     <router-link :to="`/products/${303}`">
-                      <img class="d-block w-100" src="../assets/toilet.jpg" alt="...">
+                      <img loading="lazy" class="d-block w-100" src="/images/toilet.jpg" alt="...">
                     </router-link>
                   </div>
                 </div>
@@ -70,28 +70,28 @@
                 <div class="col-md-3">
                   <div class="card card-body"  >
                     <router-link :to="`/products/${247}`">
-                      <img class="d-block w-100" src="../assets/install.jpg" alt="...">
+                      <img loading="lazy" class="d-block w-100" src="/images/install.jpg" alt="...">
                     </router-link>
                   </div>
                 </div>
                 <div class="col-md-3">
                   <div class="card card-body" >
                     <router-link :to="`/products/${44}`">
-                      <img class="d-block w-100" src="../assets/pp.jpg" alt="...">
+                      <img loading="lazy" class="d-block w-100" src="/images/pp.jpg" alt="...">
                     </router-link>
                   </div>
                 </div>
                 <div class="col-md-3">
                   <div class="card card-body" >
                     <router-link :to="`/products/${88}`">
-                      <img class="d-block w-100" src="../assets/plumb.jpg" alt="...">
+                      <img loading="lazy" class="d-block w-100" src="/images/plumb.jpg" alt="...">
                     </router-link>
                   </div>
                 </div>
                 <div class="col-md-3">
                   <div class="card card-body">
                     <router-link :to="`/products/${243}`">
-                      <img class="d-block w-100" src="../assets/toilet.jpg" alt="...">
+                      <img loading="lazy" class="d-block w-100" src="/images/toilet.jpg" alt="...">
                     </router-link>
                   </div>
                 </div>
@@ -113,10 +113,12 @@
 </template>
 
 <script setup lang="ts">
-import Navbar from '../components/Navbar.vue';
-import Footer from '../components/Footer.vue';
-import MobileMenu from '../components/MobileMenu.vue';
-import MobileBanners from '@/components/MobileBanners.vue';
+import { defineAsyncComponent } from 'vue';
+
+const Navbar = defineAsyncComponent(() => import('../components/Navbar.vue'));
+const Footer = defineAsyncComponent(() => import('../components/Footer.vue'));
+const MobileMenu = defineAsyncComponent(() => import('../components/MobileMenu.vue'));
+const MobileBanners = defineAsyncComponent(() => import('@/components/MobileBanners.vue'));
 import prevIcon from '@/components/icons/prevIcon.vue';
 import nextIcon from '@/components/icons/nextIcon.vue';
 

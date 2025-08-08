@@ -141,13 +141,15 @@
 </template>
 
 <script setup lang="ts">
-import Navbar from '../components/Navbar.vue';
-import Footer from '../components/Footer.vue';
-import MobileMenu from '../components/MobileMenu.vue';
+import { defineAsyncComponent } from 'vue';
+
+const Navbar = defineAsyncComponent(() => import('../components/Navbar.vue'));
+const Footer = defineAsyncComponent(() => import('../components/Footer.vue'));
+const MobileMenu = defineAsyncComponent(() => import('../components/MobileMenu.vue'));
 import { useItem } from '../composables/useItem';
-import ModalWindow from '../components/ModalWindow.vue'
+const ModalWindow = defineAsyncComponent(() => import('../components/ModalWindow.vue'));  
 // @ts-ignore
-import StarRating from 'vue-star-rating';
+const StarRating = defineAsyncComponent(() => ('vue-star-rating'));
 import IconCopy from '@/components/icons/IconCopy.vue';
 import IconLeft from '@/components/icons/IconLeft.vue';
 import IconRight from '@/components/icons/IconRight.vue';
@@ -157,7 +159,7 @@ import IconMinus from '@/components/icons/IconMinus.vue';
 import ScaleIcon from '@/components/icons/ScaleIcon.vue';
 import ScaleMIcon from '@/components/icons/ScaleMIcon.vue';
 import IconDown from '@/components/icons/IconDown.vue';
-import Breadcrumbs from '@/components/Breadcrumbs.vue';
+const Breadcrumbs = defineAsyncComponent(() => import('@/components/Breadcrumbs.vue'));
 
 const {
   products,
