@@ -3,27 +3,34 @@ from django.core.management.base import BaseCommand
 from items.models import Item
 
 
+def normalize_article(article):
+    if pd.isna(article):
+        return None
+    article = str(article).strip()
+    if article.endswith(".0"):
+        article = article[:-2]
+    return article.replace("\xa0", " ").strip().lower()
+
+
 class Command(BaseCommand):
     help = "Update products from Excel file"
 
     def add_arguments(self, parser):
         parser.add_argument("file_path", type=str, help="Путь к Excel файлу")
 
-    def check_actuality(self, list_to_delite, list_actual):
-        actual_data = set(list_to_delite) - set(list_actual)
+    def check_actuality(self, list_to_delete, list_actual):
+        delete_set = set(filter(None, map(normalize_article, list_to_delete)))
+        actual_set = set(filter(None, map(normalize_article, list_actual)))
+        to_remove = delete_set - actual_set
 
-        for article in actual_data:
-            try:
-                item = Item.objects.get(article=article)
+        if to_remove:
+            db_items = Item.objects.all()
+            items_to_remove = [item for item in db_items if normalize_article(item.article) in to_remove]
+            for item in items_to_remove:
                 print(f"Ненужный товар {item.name}:{item.article}")
-                item.delete()
-            except Item.DoesNotExist:
-                pass
+            Item.objects.filter(id__in=[item.id for item in items_to_remove]).delete()
 
     def handle(self, **kwargs):
-        list_to_delite = []
-        list_actual = []
-
         file_path = kwargs["file_path"]
         df = pd.read_excel(file_path)
 
@@ -33,79 +40,115 @@ class Command(BaseCommand):
         ignore_until = "Ванна поддоны"
         parsing_started = False
 
-        def filtered_rows(data):
-            nonlocal parsing_started
-            for row in data:
-                if all(pd.isna(cell) for cell in row):
-                    continue
+        rows_to_process = []
+        list_to_delete = []
+        list_actual = []
+        normalized_articles = set()
 
-                row_str = str(row[0])
+        for row in data:
+            if all(pd.isna(cell) for cell in row):
+                continue
 
-                if not parsing_started:
-                    article = str(row[2]).strip().lower()
-                    list_to_delite.append(article)
-                    if row_str.strip() == ignore_until:
-                        parsing_started = True
-                    continue
+            name_cell = str(row[0])
+            raw_article = normalize_article(row[2])
 
-                if all(pd.isna(row[i]) for i in range(1, 4)):
-                    continue
+            if not parsing_started:
+                if raw_article:
+                    list_to_delete.append(raw_article)
+                if name_cell.strip() == ignore_until:
+                    parsing_started = True
+                continue
 
-                yield row
+            if all(pd.isna(row[i]) for i in range(1, 4)):
+                continue
 
-        for row in filtered_rows(data):
+            if raw_article:
+                normalized_articles.add(raw_article)
+            rows_to_process.append(row)
 
+        db_items = Item.objects.all()
+        existing_map = {normalize_article(item.article): item for item in db_items if normalize_article(item.article) in normalized_articles}
+
+        print(f"Найдено совпадений в базе: {len(existing_map)} из {len(normalized_articles)}")
+
+        items_to_create = []
+        items_to_update = []
+
+        for row in rows_to_process:
             name = row[0]
             quantity = row[1]
-            article = str(row[2]).strip().lower()
             price = row[3]
+            article_raw = row[2]
+            article = normalize_article(article_raw)
 
-            try:
-                list_actual.append(article)
-                product = Item.objects.get(article__iexact=article)
-                if pd.isna(quantity):
-                    quantity = 0
+            if not article:
+                print(f"Пропущен товар без артикула: {name}")
+                continue
 
-                if product.name != name or product.price != price or product.quantity != quantity:
-                    product.name = name
-                    product.price = price
-                    product.quantity = quantity
-                    product.save(update_fields=["name", "price", "quantity"])
+            list_actual.append(article)
 
-                if pd.isna(quantity) or quantity == 0:
-                    available = False
-                    quantity_status = "Привезем под заказ"
-                else:
-                    available = True
-                    quantity_status = "В наличии"
-                    if quantity < 2:
-                        quantity_status = "Скоро закончится"
+            if pd.isna(quantity):
+                quantity = 0
 
-                if product.available != available or product.quantity_status != quantity_status:
-                    product.available = available
-                    product.quantity_status = quantity_status
-                    product.save(update_fields=["available", "quantity_status"])
+            available = quantity > 0
+            if not available:
+                quantity_status = "Привезем под заказ"
+            elif quantity < 2:
+                quantity_status = "Скоро закончится"
+            else:
+                quantity_status = "В наличии"
 
-            except Item.DoesNotExist:
-                if pd.isna(quantity):
-                    available = False
-                    quantity_status = "Привезем под заказ"
-                    quantity = 0
-                else:
-                    available = True
-                    quantity_status = "В наличии"
-                    if quantity < 2:
-                        quantity_status = "Скоро закончится"
+            existing_item = existing_map.get(article)
 
-                Item.objects.create(
+            if existing_item:
+                changed = False
+
+                if existing_item.name != name:
+                    existing_item.name = name
+                    changed = True
+
+                if existing_item.price != price:
+                    existing_item.price = price
+                    changed = True
+
+                if existing_item.quantity != quantity:
+                    existing_item.quantity = quantity
+                    changed = True
+
+                if existing_item.available != available:
+                    existing_item.available = available
+                    changed = True
+
+                if existing_item.quantity_status != quantity_status:
+                    existing_item.quantity_status = quantity_status
+                    changed = True
+
+                if changed:
+                    items_to_update.append(existing_item)
+            else:
+                item = Item(
                     name=name,
-                    article=article,
+                    article=str(article_raw).strip(),
                     price=price,
                     available=available,
                     quantity_status=quantity_status,
                     category_id=268,
                     quantity=quantity,
                 )
+                items_to_create.append(item)
 
-        self.check_actuality(list_to_delite, list_actual)
+        if items_to_create:
+            Item.objects.bulk_create(items_to_create, batch_size=500)
+            print(f"Создано новых товаров: {len(items_to_create)}")
+
+        if items_to_update:
+            Item.objects.bulk_update(
+                items_to_update,
+                ["name", "price", "quantity", "available", "quantity_status"],
+                batch_size=500,
+            )
+            print(f"Обновлено товаров: {len(items_to_update)}")
+
+        self.check_actuality(list_to_delete, list_actual)
+
         self.stdout.write(self.style.SUCCESS("Successfully updated products"))
