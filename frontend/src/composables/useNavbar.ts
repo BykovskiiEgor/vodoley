@@ -40,7 +40,6 @@ export function useNavbar() {
     } else {
       userNull.value = true;
     }
-    console.log(user.value);
   }
 
   const onChange = debounce(async () => {

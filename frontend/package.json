@@ -13,7 +13,7 @@
     "build-only": "vite build",
     "type-check": "vue-tsc --build --force",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
-    "format": "prettier --write src/"    
+    "format": "prettier --write src/"
   },
   "dependencies": {
     "@types/vue": "^2.0.0",
@@ -23,6 +23,8 @@
     "lodash-es": "^4.17.21",
     "maska": "^3.1.1",
     "pinia": "^3.0.1",
+    "pinia-plugin-persistedstate": "^4.5.0",
+    "pinia-plugin-persistedstate-2": "^2.0.31",
     "swiper": "^11.1.4",
     "vue": "^3.4.21",
     "vue-router": "^4.3.0",

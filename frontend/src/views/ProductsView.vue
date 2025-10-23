@@ -10,7 +10,7 @@
               <div v-for="(attr, index) in orderedAttributes" :key="index" class="filter-wrapper">
                 <label :for="attr.name">{{ attr.name }}</label>
                 <select 
-                  :value="attributeFilters[attr.name] || 'Все'" 
+                  :value="store.attributeFilters[attr.name] || 'Все'" 
                   @change="(e) => onAttributeFilterChange(attr.name, (e.target as HTMLSelectElement).value)"
                   class="form-select">
                   <option>Все</option>
@@ -27,20 +27,20 @@
                   <label for="min-price" style="margin-right: 10px;">От</label>
                   <input
                     @input="handlePriceMinInput"
-                    :value="priceMin"
+                    :value="currentPriceRange.min"
                     type="text"
                     id="min-price"                    
-                    :placeholder="priceMinPlaceholder"
+                    :store.placeholder="priceMinPlaceholder?.toString()"
                     />                  
                 </div> 
                 <div class="price-input">
                   <label for="max-price" style="margin-right: 10px;">До</label>
                   <input
                     @input="handlePriceMaxInput"
-                    :value="priceMax"
+                    :value="currentPriceRange.max"
                     type="text"                    
                     id="max-price"                    
-                    :placeholder="maxPricePlaceholder"
+                    :store.placeholder="maxPricePlaceholder?.toString()"
                     />                  
                 </div>   
               </div>                
@@ -53,13 +53,13 @@
               {{ showFilters ? 'Скрыть фильтры' : 'Показать фильтры' }}
             </button>
             <form class="sort">              
-              <select v-model="filter" class="form-select">
+              <select v-model="store.filter" class="form-select">
                 <option disabled value="">Наличие</option>
                 <option value="">Все</option>
                 <option value="exists">В наличии</option>
                 <option value="not_exists">Под заказ</option>
               </select>
-              <select v-model="sort" class="form-select">
+              <select v-model="store.sort" class="form-select">
                 <option disabled value="">Цена</option>
                 <option value="">Без сортировки</option>
                 <option value="asc">Цена меньше</option>
@@ -68,7 +68,7 @@
             </form>    
           </div>  
           <div class="filter-attributes-container">                  
-            <template v-for="(value, key) in attributeFilters" :key="key">
+            <template v-for="(value, key) in currentAttributeFilters" :key="key">
               <div v-if="value" class="selected-attribute">
                 <strong>{{ key }}:</strong> {{ value }}
                 <button
@@ -83,11 +83,11 @@
           </div>     
             <TransitionGroup name="fade" tag="div" class="item-container">
               <ItemCard
-                v-for="product in products"
+                v-for="product in productsForCategory"
                 :key="product.id"
                 :product="product"
                 :cart="cart"
-                :currentPage="currentPage"
+                :currentPage="store.currentPage[currentCategoryID]? store.currentPage[currentCategoryID] : 1"
                 @add-to-cart="addToCart"
                 @increment="increment"
                 @decrement="decrement"
@@ -95,11 +95,12 @@
             </TransitionGroup>
     
           <Pagination
-          class="pagin"
-          v-model:currentPage="currentPage"
-          :totalPages="totalPages"
-          @page-changed="fetchProducts"
-        />           
+            v-if="store.currentPage && store.totalPages && currentCategoryID"
+            class="pagin"
+            v-model:currentPage="currentPage"
+            :totalPages="totalPages"
+            @page-changed="fetchProducts"
+          />           
         </div>        
       </div>            
     </div>          
@@ -110,6 +111,7 @@
 </template>
 
 <script setup lang="ts">
+import { useRoute, useRouter } from 'vue-router';
 import { defineAsyncComponent } from 'vue';
 const Navbar = defineAsyncComponent(() => import('../components/Navbar.vue'));
 const Footer = defineAsyncComponent(() => import('../components/Footer.vue'));
@@ -120,28 +122,32 @@ const ItemCard = defineAsyncComponent(() => import('../components/ItemCard.vue')
 import { watch, ref, computed } from 'vue';
 
 const {
-  products,
-  currentPage, 
-  totalPages,
-  filter,
-  sort,
+  store,
   cart,
   addToCart,
   increment,
   decrement,
   fetchProducts,
   availableAttributes,
-  attributeFilters,
   clearFilter,
-  priceMin,
-  priceMax,
-  maxPricePlaceholder,
   priceMinPlaceholder,
+  maxPricePlaceholder,
   handlePriceMinInput,
   handlePriceMaxInput,
-} = useProducts();
+  currentPage,
+  totalPages,
+  currentAttributeFilters,
+  currentPriceRange,
+  updateAttributeFilters,
+  resetAllFilters
+  } = useProducts();
 
 const showFilters = ref(false);
+
+const route = useRoute();
+const currentCategoryID = computed(() => Array.isArray(route.params.categoryID) ? route.params.categoryID[0] : route.params.categoryID);
+
+const productsForCategory = computed(() => store.products[currentCategoryID.value] || []);
 
 const orderedAttributes = computed(() => {
   return [...availableAttributes.value].sort((a, b) => 
@@ -149,42 +155,28 @@ const orderedAttributes = computed(() => {
   );
 });
 
-function saveFiltersToSession() {  
-  const filtersToSave = {
-    filter: filter.value,
-    sort: sort.value,
-    priceMn: priceMin.value,
-    priceMx: priceMax.value,
-    attributeFilters: { ...attributeFilters.value },    
-  };
-  localStorage.setItem('savedFilters', JSON.stringify(filtersToSave));
-}
+watch(
+  () => [store.sort, store.filter],
+  () => {
+    fetchProducts(1);
+  }
+);
 
-watch([filter, sort], () => {
-  saveFiltersToSession();
-  fetchProducts(currentPage.value);
-});
-
-watch([priceMax, priceMin], () => {
-  saveFiltersToSession();
-});
 
 function onAttributeFilterChange(name: string, value: string | null) {
-  if (value === null) return; 
+  if (value === null) return;
 
-  const newFilters = { ...attributeFilters.value };
+  const updatedFilters = { ...currentAttributeFilters.value };
+
   if (value === 'Все') {
-    delete newFilters[name];
+    delete updatedFilters[name];
   } else {
-    newFilters[name] = value;
+    updatedFilters[name] = value;
   }
-  attributeFilters.value = newFilters;
 
-  saveFiltersToSession();
-  fetchProducts(1);
+  updateAttributeFilters(updatedFilters);
 }
 
-watch(attributeFilters, saveFiltersToSession, { deep: true });
 </script>
 
 <style scoped>

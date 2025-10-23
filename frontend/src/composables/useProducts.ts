@@ -1,9 +1,8 @@
-import { ref, reactive, onMounted, watch, nextTick, computed } from 'vue';
-import axios, { AxiosError } from 'axios';
+import { ref, reactive, onMounted, onBeforeUnmount, watch, computed, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import {fetchCategoryProducts} from './useAPI'
+import { fetchCategoryProducts } from './useAPI';
 import { useCounterStore } from '@/stores/counter';
-
+import { useProductsStore } from '@/stores/productsStore';
 
 interface Product {
   id: number;
@@ -36,160 +35,43 @@ interface Cart {
   [id: number]: CartItem;
 }
 
-interface SavedFilters {
-  filter: string;
-  sort: string;
-  attributeFilters: Record<string, string>;
-  priceMn: string;
-  priceMx: string;
-}
-
-
 export function useProducts() {
   const counter = useCounterStore();
-  const products = ref<Product[]>([]);
-  const pageSize = ref(10);
-  const totalPages = ref(1);
-  const route = useRoute();
-  const filter = ref('');
-  const sort = ref<string>('');
   const cart = reactive<Cart>({});
-  const availableAttributes = ref<{ name: string, values: string[] }[]>([]);
-  const attributeFilters = ref<Record<string, string>>({});
-  const currentPage = ref(Number(route.query.page) || 1);
+  const availableAttributes = ref<{ name: string; values: string[] }[]>([]);
+  const maxPricePlaceholder = ref<number>();
+  const priceMinPlaceholder = ref<number>();
+
+  const route = useRoute();
   const router = useRouter();
-  const priceMin = ref<string>('');
-  const priceMax = ref<string>('');
-  const maxPricePlaceholder = ref();
-  const priceMinPlaceholder = ref();
+  const store = useProductsStore();
 
-  const isPriceFilterDisabled = computed(() => {
-    return priceMin.value === '0' && priceMax.value === '0';
-  });
-
-  onMounted(() => {
-    counter.updateCountFromCart();
-    getProducts();
-    loadCartFromLocalStorage();
-    window.addEventListener('resize', getProducts);
-    
-  });
+  const currentAttributeFilters = computed(() => store.getAttributeFilters());
+  const currentPriceRange = computed(() => store.getPriceRange());
   
+  const isPriceFilterDisabled = computed(() => 
+    currentPriceRange.value.min === '0' && currentPriceRange.value.max === '0'
+  );
 
-  function restoreScrollPosition() {
-    const scrollY = localStorage.getItem("scrollY");
-    if (scrollY) {    
-      window.scrollTo(0, parseInt(scrollY));
-    }    
+  function getCurrentCategoryID() {
+    return Array.isArray(route.params.categoryID)
+      ? route.params.categoryID[0]
+      : route.params.categoryID;
   }
 
-  function getProducts() {  
-    let categoryID = route.params.categoryID;
-
-  
-    if (Array.isArray(categoryID)) {
-      categoryID = categoryID[0];
-    }
-
-    if (!categoryID) {
-      return;
-    }
-
-    const savedFilters = localStorage.getItem('savedFilters');
-    if (savedFilters) {
-      const parsedFilters: SavedFilters = JSON.parse(savedFilters);
-      if (parsedFilters.filter) {
-        filter.value = parsedFilters.filter;
-      }
-
-      if (parsedFilters.sort) {
-        sort.value = parsedFilters.sort;
-      }
-
-      if (parsedFilters.attributeFilters && Object.keys(parsedFilters.attributeFilters).length > 0) {
-        attributeFilters.value = { ...parsedFilters.attributeFilters };
-      }
-      if (parsedFilters.priceMn){
-        priceMin.value = parsedFilters.priceMn;
-      }
-      if (parsedFilters.priceMx){
-        priceMax.value = parsedFilters.priceMx;
-      }
-    }    
-
-    fetchCategoryProducts(
-      categoryID,
-      currentPage.value,
-      pageSize.value,
-      filter.value,
-      sort.value,
-      window.innerWidth,
-      attributeFilters.value,
-      priceMin.value !== undefined && priceMin.value !== '' ? Number(priceMin.value) : undefined,
-      priceMax.value !== undefined && priceMax.value !== '' ? Number(priceMax.value) : undefined
-    )
-      .then(data => {      
-        products.value = data.results;  
-        availableAttributes.value = data.available_attributes; 
-        totalPages.value = Math.ceil(data.count / data.page_size);   
-
-        if (data.price_range?.max_price) {
-          maxPricePlaceholder.value = data.price_range.max_price;
-        }
-
-        if (data.price_range?.min_price) {
-          priceMinPlaceholder.value = data.price_range.min_price;
-        }
-
-        return nextTick();    
-      })
-      .then(() => {
-        restoreScrollPosition();
-      })
-      .catch((error: AxiosError) => {
-        console.error('Fetch products error:', error.message);
-        products.value = [];
-      });    
-      
+  function debounce<F extends (...args: any[]) => any>(fn: F, delay: number): (...args: Parameters<F>) => void {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    return function(...args: Parameters<F>) {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => fn.apply(null, args), delay);
+    };
   }
 
-  function addToCart(product: Product) {
-    if (cart[product.id]) {
-      cart[product.id].quantity += 1;
-    } else {
-      cart[product.id] = {                
-        id: product.id,
-        article: product.article,
-        name: product.name,
-        price: product.price,
-        discount_price: product.discount_price,
-        images: product.images,
-        quantity: 1,
-        quantity_max: product.quantity
-      };
+  function loadCartFromLocalStorage() {
+    const storedCart = JSON.parse(localStorage.getItem('cart') || '{}');
+    for (const id in storedCart) {
+      if (storedCart.hasOwnProperty(id)) cart[parseInt(id)] = storedCart[id];
     }
-    updateLocalStorage();
-  }
-
- function increment(product: Product) { 
-    if (cart[product.id]) 
-      {
-        if (cart[product.id].quantity < product.quantity)
-          {
-            cart[product.id].quantity += 1;
-            updateLocalStorage();
-          }
-      }
-  }
-
-  function decrement(product: Product) {
-    if (cart[product.id].quantity > 1) {
-      cart[product.id].quantity -= 1;
-    } else {
-      delete cart[product.id];
-    }
-    updateLocalStorage();
-    
   }
 
   function updateLocalStorage() {
@@ -197,108 +79,189 @@ export function useProducts() {
     counter.updateCountFromCart();
   }
 
-
-  function fetchProducts(page: number) {
-    currentPage.value = page;
-
-    router.push({ query: { ...route.query, page: currentPage.value } });
-
-    getProducts();    
+  function addToCart(product: Product) {
+    if (cart[product.id]) cart[product.id].quantity += 1;
+    else
+      cart[product.id] = {
+        id: product.id,
+        article: product.article,
+        name: product.name,
+        price: product.price,
+        discount_price: product.discount_price,
+        images: product.images,
+        quantity: 1,
+        quantity_max: product.quantity,
+      };
+    updateLocalStorage();
   }
 
-
-  function loadCartFromLocalStorage() {
-    const storedCart = JSON.parse(localStorage.getItem('cart') || '{}');
-    for (const id in storedCart) {
-      if (storedCart.hasOwnProperty(id)) {
-        cart[parseInt(id)] = storedCart[id];
-      }
+  function increment(product: Product) {
+    if (cart[product.id]?.quantity < product.quantity) {
+      cart[product.id].quantity += 1;
+      updateLocalStorage();
     }
   }
 
-  function clearFilter(key: string) {
-    delete attributeFilters.value[key];
-    localStorage.removeItem("savedFilters")
-    localStorage.removeItem("scrollY")
+  function decrement(product: Product) {
+    if (cart[product.id]?.quantity > 1) cart[product.id].quantity -= 1;
+    else delete cart[product.id];
+    updateLocalStorage();
+  }
+
+  async function getProducts() {
+    const categoryID = getCurrentCategoryID();
+    if (!categoryID) return;
+
+    store.setCurrentCategory(categoryID);
+
+    const currentPage = store.currentPage?.[categoryID] || 1;
+    const attributeFilters = currentAttributeFilters.value;
+    const priceRange = currentPriceRange.value;
+
+    try {
+      const data = await fetchCategoryProducts(
+        categoryID,
+        currentPage,
+        store.pageSize,
+        store.filter,
+        store.sort,
+        window.innerWidth,
+        attributeFilters, 
+        priceRange.min ? Number(priceRange.min) : undefined,
+        priceRange.max ? Number(priceRange.max) : undefined
+      );
+
+      store.setProducts(categoryID, data.results, Math.ceil(data.count / data.page_size));
+      availableAttributes.value = data.available_attributes || [];
+
+      if (data.price_range?.max_price) maxPricePlaceholder.value = data.price_range.max_price;
+      if (data.price_range?.min_price) priceMinPlaceholder.value = data.price_range.min_price;
+
+    } catch (error) {
+      console.error('Fetch products error', error);
+      store.setProducts(categoryID, [], 1);
+    }
+  }
+
+  function fetchProducts(page: number) {
+    const categoryID = getCurrentCategoryID();
+    store.setPage(categoryID, page);
+    router.push({ query: { ...route.query, page } });
     getProducts();
   }
 
   const applyPriceFilter = () => {
-    localStorage.removeItem("scrollY");
     fetchProducts(1);
   };
- 
 
-  const applyPriceFilterDebounced = debounce(() => { 
-    applyPriceFilter();
-  }, 800);
+  const applyPriceFilterDebounced = debounce(applyPriceFilter, 800);
 
   function handlePriceMinInput(event: Event) {
     const input = event.target as HTMLInputElement;
-    const originalValue = input.value;
-    const cleanedValue = originalValue.replace(/[^0-9]/g, '');
+    const cleanedValue = input.value.replace(/[^0-9]/g, '');
     
-    if (cleanedValue !== originalValue) {
-      priceMin.value = cleanedValue;
-      input.value = cleanedValue;
-    } else {
-      priceMin.value = originalValue;
-    }
+    const priceRange = currentPriceRange.value;
+    store.setPriceRange(cleanedValue, priceRange.max);
     
+    input.value = cleanedValue;
     applyPriceFilterDebounced();
   }
 
   function handlePriceMaxInput(event: Event) {
     const input = event.target as HTMLInputElement;
-    const originalValue = input.value;
-    const cleanedValue = originalValue.replace(/[^0-9]/g, '');
+    const cleanedValue = input.value.replace(/[^0-9]/g, '');
     
-    if (cleanedValue !== originalValue) {
-      priceMax.value = cleanedValue;
-      input.value = cleanedValue;
-    } else {
-      priceMax.value = originalValue;
-    }
+    const priceRange = currentPriceRange.value;
+    store.setPriceRange(priceRange.min, cleanedValue);
     
+    input.value = cleanedValue;
     applyPriceFilterDebounced();
   }
 
-
-  function debounce<F extends (...args: any[]) => any>(fn: F, delay: number): (...args: Parameters<F>) => void {
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    
-    return function(...args: Parameters<F>) {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-      timeoutId = setTimeout(() => fn.apply(null, args), delay);
-    };
+  function clearFilter(key: string) {
+    const categoryID = getCurrentCategoryID();
+    if (categoryID && store.attributeFilters[categoryID]) {
+      const updatedFilters = { ...currentAttributeFilters.value };
+      delete updatedFilters[key];
+      store.setAttributeFilters(updatedFilters);
+    }
+    fetchProducts(1);
   }
 
- 
+  function updateAttributeFilters(filters: Record<string, string>) {
+    store.setAttributeFilters(filters);
+    fetchProducts(1);
+  }
+
+  function resetAllFilters() {
+    store.resetCurrentCategoryFilters();
+    fetchProducts(1);
+  }
+
+  const currentCategoryID = computed(() => getCurrentCategoryID());
+  
+  const currentPage = computed({
+    get: () => store.currentPage?.[currentCategoryID.value] ?? 1,
+    set: (val: number) => store.setPage(currentCategoryID.value, val),
+  })
+
+  const totalPages = computed(() => store.totalPages?.[currentCategoryID.value] ?? 1)
+
+  const handleResize = debounce(getProducts, 300);
+
+  onMounted(async () => {
+    counter.updateCountFromCart();
+    loadCartFromLocalStorage();
+    await nextTick();
+
+    const categoryID = getCurrentCategoryID();
+    if (!categoryID) return;
+
+    store.setCurrentCategory(categoryID);
+
+    if (!store.currentPage?.[categoryID]) store.setPage(categoryID, 1);
+    if (!store.totalPages?.[categoryID]) store.totalPages[categoryID] = 1;
+
+    getProducts();
+    window.addEventListener('resize', handleResize);
+  });
+
+  onBeforeUnmount(() => {
+    window.removeEventListener('resize', handleResize);
+  });  
+
+  watch(() => route.params.categoryID, (newCategory, oldCategory) => {
+    if (newCategory !== oldCategory) {
+      const categoryID = getCurrentCategoryID();
+      
+      store.setCurrentCategory(categoryID);
+      
+      store.setPage(categoryID, 1);    
+      router.replace({ query: { ...route.query, page: 1 } });
+      getProducts();
+    }
+  });
 
   return {
-    products,
-    currentPage,
-    pageSize,
-    totalPages,
-    filter,
-    sort,
+    store,
     cart,
     addToCart,
     increment,
     decrement,
     fetchProducts,
     availableAttributes,
-    attributeFilters, 
     clearFilter,
-    priceMin,
-    priceMax,
-    maxPricePlaceholder,
+    updateAttributeFilters, 
+    resetAllFilters, 
     applyPriceFilter,
     isPriceFilterDisabled,
-    priceMinPlaceholder,
     handlePriceMaxInput,
     handlePriceMinInput,
+    maxPricePlaceholder,
+    priceMinPlaceholder,
+    currentPage,
+    totalPages,
+    currentAttributeFilters, 
+    currentPriceRange, 
   };
 }

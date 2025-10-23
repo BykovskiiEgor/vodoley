@@ -1,6 +1,6 @@
 <template>
   <div class="item-card ">
-      <router-link :to="`/current-items/${product.id}?page=${currentPage}`" @click="saveScrollPosition">
+      <router-link :to="`/current-items/${product.id}?page=${currentPage}`">
         <div class="image-container">
           <img class="item-img" :src="product.images.length ? product.images[0].image : '/images/vodoley.jpg'" :alt="`Image for ${product.name}`"/>
         </div>
@@ -104,10 +104,6 @@ export default defineComponent({
       if (status === 'Скоро закончится') return 'less-in-stock';
       if (status === 'Много') return 'text-success';
       return '';
-    },
-
-    saveScrollPosition() {
-      localStorage.setItem("scrollY", window.scrollY.toString());       
     },
   }
 });
