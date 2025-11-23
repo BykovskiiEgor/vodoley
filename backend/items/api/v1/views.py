@@ -8,6 +8,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
+from celery.result import AsyncResult
 from items.models import Item
 from items.models import RecommendItem
 from items.pagination import CustomPageNumberPagination
@@ -283,3 +284,21 @@ class SearchByPhoto(APIView):
 def trigger_flexi_update(request):
     task = run_flexi_update_command.delay()
     return JsonResponse({"task_id": task.id})
+
+
+def trigger_flexi_update_get_status(request, task_id):
+    try:
+        task_result = AsyncResult(task_id)
+
+        response_data = {"task_id": task_id, "status": task_result.status, "result": task_result.result}
+
+        if task_result.successful():
+            response_data["result"] = str(task_result.result)
+
+        elif task_result.failed():
+            response_data["error"] = str(task_result.result)
+
+        return JsonResponse(response_data)
+
+    except Exception as e:
+        return JsonResponse({"error": str(e), "task_id": task_id, "status": "NOT_FOUND"}, status=404)

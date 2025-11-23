@@ -16,4 +16,5 @@ urlpatterns = [
     path("get-images", views.GetAllImages.as_view(), name="all-images"),
     path("search-photo/", views.SearchByPhoto.as_view(), name="serch_by_photo"),
     path("update-flexi/", views.trigger_flexi_update, name="update-flexi"),
+    path("update-flexi-status/<str:task_id>/", views.trigger_flexi_update_get_status, name="update-flexi-status"),
 ]

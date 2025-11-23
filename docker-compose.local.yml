@@ -7,7 +7,7 @@ services:
     command: gunicorn --workers 3 --timeout 120 --bind 0.0.0.0:8000 shop.wsgi:application
     volumes:
       - ./media:/app/backend/media
-      - ./static:/app/backend/main/static
+      - ./backend/main/static:/app/backend/main/static
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
     ports:
@@ -36,7 +36,7 @@ services:
       - backend
 
   pgdb:
-    image: postgres
+    image: postgres:17
     container_name: pgdb
     environment:
       - POSTGRES_DB=shop
@@ -49,32 +49,32 @@ services:
     networks:
       backend:
 
-  frontend:
-    image: avoid1/vue-frontend:latest
-    container_name: frontend
-    volumes:
-      - frontend_dist:/output
-    env_file:
-      - .env.frontend
-    command: ["sh", "-c", "npm run build && cp -r dist /output"]
+  # frontend:
+  #   image: avoid1/vue-frontend:latest
+  #   container_name: frontend
+  #   volumes:
+  #     - frontend_dist:/output
+  #   env_file:
+  #     - .env.frontend
+  #   command: ["sh", "-c", "npm run build && cp -r dist /output"]
 
-  nginx:
-    image: avoid1/nginx-custom:latest
-    container_name: nginx
-    depends_on:
-      - frontend
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/vodoley-belebey.ru/fullchain.pem:/etc/letsencrypt/live/vodoley-belebey.ru/fullchain.pem
-      - ./nginx/vodoley-belebey.ru/privkey.pem:/etc/letsencrypt/live/vodoley-belebey.ru/privkey.pem
-      - frontend_dist:/usr/share/nginx/html
-      - ./backend/main/static:/usr/share/nginx/html/static
-      - ./media:/usr/share/nginx/media
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-    networks:
-      backend:
+  # nginx:
+  #   image: avoid1/nginx-custom:latest
+  #   container_name: nginx
+  #   depends_on:
+  #     - frontend
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx/vodoley-belebey.ru/fullchain.pem:/etc/letsencrypt/live/vodoley-belebey.ru/fullchain.pem
+  #     - ./nginx/vodoley-belebey.ru/privkey.pem:/etc/letsencrypt/live/vodoley-belebey.ru/privkey.pem
+  #     - frontend_dist:/usr/share/nginx/html
+  #     - ./backend/main/static:/usr/share/nginx/html/static
+  #     - ./media:/usr/share/nginx/media
+  #     - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+  #   networks:
+  #     backend:
 
   celery:
     image: avoid1/django-backend:latest
@@ -126,10 +126,9 @@ services:
 volumes:
   pgdbdata:
   redisdata:
-  frontend_dist:
+  # frontend_dist:
 
 networks:
   backend:
     driver: bridge
   src_backend_public:
-    external: true

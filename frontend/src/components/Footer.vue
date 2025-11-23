@@ -1,5 +1,5 @@
 <template>
-  <footer class="footer py-5">
+  <footer class="footer">
     <div class="container">
       <div class="footer-columns">
         <div class="year-name">
@@ -38,6 +38,7 @@ export default defineComponent({
 .footer {
   background-color: #003464;
   margin-top: auto; 
+  padding: 20px 0;
 }
 
 .container{
@@ -69,5 +70,21 @@ export default defineComponent({
   font-size: 12px;
   font-weight: 100;
   gap: 5px;
+}
+
+@media (max-width: 768px) {
+  .footer {
+    padding: 10px 0;
+  }
+  .footer-columns {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .links {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
 }
 </style>
