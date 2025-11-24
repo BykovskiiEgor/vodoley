@@ -129,9 +129,28 @@ class ItemsRepository(IItemsRepository):
 
         return items, price_range
 
-    def get_by_category(self, category_id: int) -> QuerySet[Item]:
-        """Get items by category."""
-        return Item.objects.filter(category__in=category_id, is_active=True).annotate(avg_rating=Avg("itemstarrating__stars"))
+    def get_by_category(self, category_ids: List[int], query_params: dict[str, Any] = None) -> tuple[QuerySet[Item], dict[str, Any]]:
+        items = (
+            Item.objects.filter(category_id__in=category_ids, is_active=True)
+            .select_related("category")
+            .prefetch_related(
+                Prefetch("attributes", queryset=ItemAttribute.objects.select_related("attribute").order_by("attribute__name", "value")),
+                Prefetch("images", queryset=ItemImage.objects.order_by("id")),
+                "images",
+            )
+            .annotate(avg_rating=Avg("itemstarrating__stars"))
+            .order_by("name")
+        )
+
+        if query_params:
+            items, price_range = self.filter_items(query_params, items)
+        else:
+            price_range = items.aggregate(
+                min_price=Min("price"),
+                max_price=Max("price"),
+            )
+
+        return items, price_range
 
     def rate_item(self, item: Item, user_id: int, rate: int) -> None:
         """Rate an item by a user."""

@@ -64,15 +64,10 @@ class ItemsService:
             return None
 
     def get_by_category(self, category_id: int, query_params: dict[str, Any]) -> tuple[QuerySet[Item], dict[str, Any]] | None:
-        """Retrieve items by category and apply additional filters."""
-        category = self.category_service.get_items_by_category(category_id)
-        if not category:
+        category_ids = self.category_service.get_all_subcategories_ids(category_id)
+        if not category_ids:
             return None
-
-        subcategories = self.category_service.get_all_subcategories(category)
-        items = self.items_repository.get_by_category(subcategories)
-        items = self.items_repository.get_items_attributes(items)
-        items, price_range = self.items_repository.filter_items(query_params, items)
+        items, price_range = self.items_repository.get_by_category(category_ids, query_params)
 
         return (items, price_range) if items.exists() else None
 
